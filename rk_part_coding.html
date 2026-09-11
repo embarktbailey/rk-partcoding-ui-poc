@@ -1,0 +1,2015 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Part Coding — RK Supply</title>
+<style>
+  :root{
+    --green:#22A45D;
+    --blue:#2563C9;
+    --red:#D93B3B;
+    --grey:#6B7280;
+    --ink:#1A1D21;
+    --rk-red:#E03127;
+    --line:#E3E6E9;
+    --rowline:#EDEFF1;
+    --thead:#F5F6F7;
+    --pill:#F1F3F5;
+    --hover:#F8F9FA;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;background:#EEF0F2;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    padding:20px;
+  }
+  button,input,select{font:inherit;color:inherit;}
+  button{cursor:pointer;background:none;border:none;}
+
+  /* ---------- app shell ---------- */
+  .card{
+    height:100%;
+    background:#fff;
+    border-radius:10px;
+    box-shadow:0 6px 24px rgba(20,26,34,.13), 0 1px 3px rgba(20,26,34,.07);
+    display:flex;
+    overflow:hidden;
+  }
+
+  /* ---------- sidebar ---------- */
+  .sidebar{
+    width:184px;flex:none;   /* 165px -> 184px so "Admin Part Coding" stays on one line */
+    border-right:1px solid var(--line);
+    display:flex;flex-direction:column;
+    padding:22px 0 20px;
+  }
+  .logo{padding:0 18px 24px 22px;}
+  .logo img{display:block;width:100%;height:auto;max-width:132px;}
+  .nav{display:flex;flex-direction:column;gap:2px;padding:0 10px;}
+  .nav-item{
+    display:flex;align-items:center;gap:9px;width:100%;text-align:left;
+    font-size:13px;color:var(--grey);white-space:nowrap;
+    padding:9px 10px;border-radius:5px;position:relative;
+  }
+  .nav-item svg{flex:none;stroke:var(--grey);}
+  .nav-item:hover{background:var(--hover);}
+  .nav-item.active{background:var(--pill);color:var(--ink);font-weight:600;}
+  .nav-item.active svg{stroke:var(--ink);}
+  .nav-item.active::before{
+    content:"";position:absolute;left:0;top:4px;bottom:4px;
+    width:3px;border-radius:2px;background:var(--rk-red);
+  }
+  .nav-foot{margin-top:auto;padding:0 10px;}
+
+  /* ---------- main ---------- */
+  .main{flex:1;min-width:0;padding:22px 24px 18px;display:flex;flex-direction:column;}
+  .titlerow{display:flex;align-items:baseline;gap:10px;}
+  h1{font-size:22px;font-weight:600;letter-spacing:-.2px;}
+  .subcount{font-size:12px;color:#8A9099;}
+
+  /* toolbar */
+  .toolbar{display:flex;align-items:center;gap:8px;margin-top:14px;flex-wrap:wrap;}
+  .ctl{
+    font-size:12px;line-height:1;
+    border:1px solid var(--line);
+    background:#fff;color:#3B4149;
+    border-radius:5px;padding:7px 10px;
+    white-space:nowrap;
+  }
+  select.ctl{background:#FAFBFC;padding-right:22px;max-width:210px;
+    appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='8' height='6'><path d='M0 0h8L4 6z' fill='%239AA1AA'/></svg>");
+    background-repeat:no-repeat;background-position:right 8px center;}
+  select.ctl:focus,input.ctl:focus{outline:2px solid #C9D8F2;outline-offset:-1px;}
+  input.ctl{width:170px;}
+  .ctl.btn:hover{background:var(--hover);}
+  .ctl.primary{background:var(--green);border-color:var(--green);color:#fff;font-weight:600;}
+  .ctl.primary:hover{background:#1C8E50;}
+  .ctl.ghost{border-color:transparent;color:#8A9099;}
+  .ctl.ghost:hover{background:var(--hover);color:#3B4149;}
+  .spacer{margin-left:auto;}
+  .src{font-size:11px;color:#8A9099;white-space:nowrap;}
+
+  /* summary strip */
+  .summary{display:flex;align-items:center;gap:8px;margin-top:13px;font-size:12px;flex-wrap:wrap;}
+  .summary .total{font-weight:600;margin-right:2px;}
+  .cnt{
+    font-size:11px;line-height:1;border-radius:999px;padding:5px 9px;font-weight:600;
+    border:1px solid transparent;
+  }
+  .cnt.g{background:#E6F5ED;color:#177A45;}
+  .cnt.b{background:#E7EEFA;color:#1E4FA3;}
+  .cnt.r{background:#FBE9E9;color:#B32C2C;}
+  .cnt.n{background:#F0F1F3;color:#5A6069;}
+  .cnt[aria-pressed="true"]{border-color:currentColor;}
+  .cnt.dim{opacity:.45;}
+
+  /* ---------- table ---------- */
+  .tablewrap{
+    margin-top:13px;flex:1;min-height:0;
+    overflow:auto;
+    border:1px solid var(--line);border-radius:6px;
+  }
+  table{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;min-width:1040px;}
+  thead th{
+    position:sticky;top:0;z-index:2;
+    background:var(--thead);
+    font-size:10px;font-weight:600;letter-spacing:.55px;text-transform:uppercase;
+    color:#8A9099;text-align:left;
+    padding:0;
+    border-bottom:1px solid var(--line);
+    white-space:nowrap;
+  }
+  thead th button{
+    width:100%;text-align:left;padding:9px 10px;font:inherit;color:inherit;
+    letter-spacing:inherit;text-transform:inherit;
+  }
+  thead th button:hover{color:#5A6069;}
+  th .caret{opacity:0;margin-left:3px;}
+  th.sorted .caret{opacity:1;color:#5A6069;}
+  tbody td{
+    font-size:12px;color:#33383F;
+    padding:9px 10px;
+    border-bottom:1px solid var(--rowline);
+    vertical-align:middle;
+  }
+  tbody tr:hover td{background:var(--hover);}
+  tbody tr.off td{opacity:.5;}
+  .dash{color:#C2C7CD;}
+  .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1;}
+  .cust{font-weight:500;color:var(--ink);}
+  .empty td{padding:40px 10px;text-align:center;color:#8A9099;font-size:13px;}
+
+  .tp{display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:.5px;
+      line-height:1;padding:5px 8px;border-radius:999px;white-space:nowrap;}
+  .tp.PREFERENCE{background:#E6F5ED;color:#177A45;}
+  .tp.REQUIREMENT{background:#E7EEFA;color:#1E4FA3;}
+  .tp.EXCLUSION{background:#FBE9E9;color:#B32C2C;}
+  .tp.NOTE{background:#F0F1F3;color:#5A6069;}
+
+  .chip{display:inline-block;font-size:10.5px;color:#5A6069;white-space:nowrap;
+        background:var(--pill);border-radius:4px;padding:4px 6px;line-height:1;}
+
+  .ladder{display:flex;flex-wrap:wrap;gap:4px 9px;align-items:center;}
+  .brand{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;white-space:nowrap;}
+  .rank{width:14px;height:14px;border-radius:50%;background:#E9EBEE;color:var(--grey);
+        font-size:9px;font-weight:700;display:inline-flex;align-items:center;
+        justify-content:center;font-variant-numeric:tabular-nums;flex:none;}
+
+  .tog{width:26px;height:15px;border-radius:999px;background:#CDD2D8;
+       position:relative;display:inline-block;transition:background .12s;vertical-align:middle;}
+  .tog::after{content:"";position:absolute;top:2px;left:2px;width:11px;height:11px;
+              border-radius:50%;background:#fff;transition:transform .12s;}
+  .tog[aria-pressed="true"]{background:var(--green);}
+  .tog[aria-pressed="true"]::after{transform:translateX(11px);}
+
+  .rowact{display:flex;gap:2px;}
+  .iconbtn{padding:4px;border-radius:4px;line-height:0;opacity:0;color:#8A9099;}
+  tbody tr:hover .iconbtn{opacity:1;}
+  .iconbtn:hover{background:#E9EBEE;color:var(--ink);}
+  .iconbtn.danger:hover{background:#FBE9E9;color:var(--red);}
+
+  /* ---------- modal ---------- */
+  .backdrop{
+    position:fixed;inset:0;background:rgba(20,26,34,.35);
+    display:flex;align-items:center;justify-content:center;padding:24px;z-index:50;
+  }
+  .backdrop[hidden]{display:none;}
+  .modal{
+    background:#fff;border-radius:10px;width:640px;max-width:100%;
+    max-height:100%;display:flex;flex-direction:column;
+    box-shadow:0 20px 50px rgba(20,26,34,.28);
+  }
+  .modal header{padding:18px 22px 14px;border-bottom:1px solid var(--line);
+                display:flex;align-items:center;justify-content:space-between;}
+  .modal h2{font-size:16px;font-weight:600;}
+  .modal .body{padding:18px 22px;overflow:auto;}
+  .modal footer{padding:14px 22px;border-top:1px solid var(--line);
+                display:flex;align-items:center;gap:8px;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px;}
+  .field{display:flex;flex-direction:column;gap:5px;}
+  .field.wide{grid-column:1 / -1;}
+  label{font-size:10px;font-weight:600;letter-spacing:.55px;text-transform:uppercase;color:#8A9099;}
+  .field input,.field select,.field textarea{
+    font-size:13px;border:1px solid var(--line);border-radius:5px;padding:8px 9px;
+    background:#fff;width:100%;font-family:inherit;
+  }
+  .field textarea{resize:vertical;min-height:56px;}
+  .field input:focus,.field select:focus,.field textarea:focus{
+    outline:2px solid #C9D8F2;outline-offset:-1px;}
+  .hint{font-size:11px;color:#8A9099;}
+
+  .ladderedit{display:flex;flex-direction:column;gap:6px;}
+  .ledrow{display:flex;align-items:center;gap:6px;}
+  .ledrow .rank{flex:none;}
+  .ledrow input{flex:1;}
+  .err{color:var(--red);font-size:12px;}
+  /* ---------- view switching ---------- */
+  .view{flex:1;min-height:0;display:flex;flex-direction:column;}
+  .view[hidden]{display:none;}
+
+  /* amber pill — new palette variant, follows the g/b/r/n pattern above */
+  .cnt.w{background:#FCEBCD;color:#8A5A0B;}
+  .ctl:disabled{opacity:.55;cursor:default;}
+
+  /* ---------- part coding ---------- */
+  .paste{margin-top:13px;}
+  .paste textarea{
+    width:100%;height:147px;resize:vertical;display:block;
+    border:1px solid var(--line);border-radius:6px;background:#fff;
+    padding:10px 12px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+    font-size:11.5px;line-height:1.8;color:#33383F;white-space:pre;
+  }
+  .paste textarea:focus{outline:2px solid #C9D8F2;outline-offset:-1px;}
+
+  .st{display:inline-block;font-size:10.5px;font-weight:600;line-height:1;
+      padding:5px 10px;border-radius:999px;white-space:nowrap;}
+  .st.auto{background:#D9F2E4;color:#177A45;}
+  .st.review{background:#FCE3B4;color:#8A5A0B;}
+  .st.rfq{background:#FBC3C3;color:#A82626;}
+  .st.manual{background:#CFE0F5;color:#2A5DA8;}
+  .st.coded{background:#F0F1F3;color:#5A6069;}
+
+  .mba{display:inline-block;font-size:10px;font-weight:700;line-height:1;
+       padding:4px 7px;border-radius:999px;}
+  .mba.yes{background:#D9F2E4;color:#177A45;}
+  .mba.no{background:#FBC3C3;color:#A82626;}
+
+  .code{color:var(--blue);font-weight:500;}
+  .rkph{display:block;background:#EDEFF1;border-radius:4px;color:#9AA1AA;
+        padding:5px 8px;font-size:11.5px;}
+  .right{text-align:right;}
+
+  .infobtn{padding:3px;border-radius:4px;line-height:0;color:var(--blue);}
+  .infobtn:hover{background:#E7EEFA;}
+  .appwrap{display:flex;gap:3px;align-items:center;}
+  .appbtn{padding:2px;border-radius:50%;line-height:0;}
+  .appbtn.ok{color:var(--green);}
+  .appbtn.ok:hover{background:#E6F5ED;}
+  .appbtn.no{color:var(--red);}
+  .appbtn.no:hover{background:#FBE9E9;}
+  .appstate{font-size:10.5px;font-weight:600;white-space:nowrap;}
+  .appstate.ok{color:#177A45;}
+  .appstate.no{color:#B32C2C;}
+
+  .proc{font-size:12px;color:#8A9099;display:flex;align-items:center;gap:7px;}
+  .proc[hidden]{display:none;}
+  .spin{width:12px;height:12px;flex:none;border-radius:50%;
+        border:2px solid #D9DDE2;border-top-color:var(--blue);
+        animation:sp .7s linear infinite;}
+  @keyframes sp{to{transform:rotate(360deg);}}
+  @media (prefers-reduced-motion:reduce){.spin{animation-duration:2.2s;}}
+
+  /* ---------- candidate popover ---------- */
+  .pop{
+    position:fixed;z-index:55;width:440px;max-width:calc(100vw - 24px);
+    background:#fff;border:1px solid var(--line);border-radius:9px;
+    box-shadow:0 16px 44px rgba(20,26,34,.22), 0 2px 6px rgba(20,26,34,.10);
+    padding:14px 15px 13px;
+  }
+  .pop[hidden]{display:none;}
+  .pop h3{font-size:13px;font-weight:700;}
+  .pop .sub{font-size:11px;color:#8A9099;margin-top:1px;}
+  .candhead{display:flex;gap:6px;font-size:9.5px;font-weight:600;letter-spacing:.5px;
+            text-transform:uppercase;color:#8A9099;
+            margin-top:11px;padding:0 4px 5px;border-bottom:1px solid var(--line);}
+  .candlist{max-height:176px;overflow:auto;margin:3px -4px 0;}
+  .cand{display:flex;gap:6px;align-items:center;width:100%;text-align:left;
+        padding:6px 4px;border-radius:5px;font-size:11.5px;}
+  .cand:hover{background:var(--hover);}
+  .cand[aria-pressed="true"]{background:#EAF1FC;}
+  .cc{flex:1;min-width:0;}
+  .cm{width:54px;flex:none;text-align:right;}
+  .ci{width:42px;flex:none;text-align:right;color:#6B7280;font-size:11px;}
+  .ccode{font-weight:600;color:var(--ink);}
+  .cdesc{display:block;color:#6B7280;font-size:10.5px;margin-top:1px;
+         overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .mp{display:inline-block;font-size:10px;font-weight:700;line-height:1;
+      padding:4px 6px;border-radius:999px;}
+  .mp.hi{background:#D9F2E4;color:#177A45;}
+  .mp.mid{background:#FCEBCD;color:#8A5A0B;}
+  .mp.lo{background:#FBC3C3;color:#A82626;}
+  .popgrid{display:flex;gap:8px;margin-top:11px;}
+  .popgrid > *{flex:1;min-width:0;}
+  .searchwrap{position:relative;}
+  .searchwrap .popin{padding-right:26px;}
+  .searchwrap svg{position:absolute;right:8px;top:50%;transform:translateY(-50%);
+                  stroke:#9AA1AA;fill:none;pointer-events:none;}
+  .popin{font-size:12px;border:1px solid var(--line);border-radius:5px;
+         padding:7px 9px;background:#fff;width:100%;font-family:inherit;}
+  .popin:focus{outline:2px solid #C9D8F2;outline-offset:-1px;}
+  textarea.popin{resize:vertical;min-height:58px;margin-top:8px;display:block;}
+  .popfoot{display:flex;align-items:center;margin-top:11px;}
+
+  /* ---------- batch selection (Part Coding Admin) ---------- */
+  input.cb{width:13px;height:13px;margin:0;display:block;
+           accent-color:var(--blue);cursor:pointer;}
+  input.cb:disabled{cursor:default;opacity:.4;}
+  .chk{padding:9px 6px 9px 12px;}
+  thead th.chk{padding-top:9px;padding-bottom:9px;}
+  tbody tr.selrow td{background:#EFF5FD;}
+  .bulk{display:flex;align-items:center;gap:7px;}
+  .bulk[hidden]{display:none;}
+  .bulkn{font-size:11.5px;font-weight:600;color:#5A6069;}
+  .ctl.danger{color:#B32C2C;}
+  .ctl.danger:hover{background:#FBE9E9;border-color:#F1C9C9;}
+
+  .toast{
+    position:fixed;left:50%;bottom:26px;transform:translateX(-50%);
+    background:var(--ink);color:#fff;font-size:12.5px;
+    padding:9px 15px;border-radius:6px;z-index:60;
+    box-shadow:0 6px 20px rgba(20,26,34,.28);
+  }
+  .toast[hidden]{display:none;}
+</style>
+</head>
+<body>
+<div class="card">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar">
+    <div class="logo"><img src="data:image/png;base64,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" alt="RK Supply" width="371" height="237"></div>
+    <nav class="nav">
+      <button class="nav-item"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke-width="1.5"><rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1"/><rect x="9" y="1.5" width="5.5" height="5.5" rx="1"/><rect x="1.5" y="9" width="5.5" height="5.5" rx="1"/><rect x="9" y="9" width="5.5" height="5.5" rx="1"/></svg>Dashboard</button>
+      <button class="nav-item"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke-width="1.5"><path d="M2 8h12M10.5 4.5 14 8l-3.5 3.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="1.5" y="1.5" width="3" height="13" rx="1"/></svg>Process</button>
+      <button class="nav-item"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke-width="1.5"><rect x="2" y="1.5" width="12" height="13" rx="1.5"/><path d="M5 5.5h6M5 8.5h6M5 11.5h3.5" stroke-linecap="round"/></svg>Quotes</button>
+      <button class="nav-item active" data-view="partcoding"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke-width="1.5"><path d="M6 2 3 8l3 6M10 2l3 6-3 6" stroke-linecap="round" stroke-linejoin="round"/></svg>Part Coding</button>
+      <button class="nav-item" data-view="admin"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke-width="1.5"><path d="M6 2 3 8l3 6M10 2l3 6-3 6" stroke-linecap="round" stroke-linejoin="round"/></svg>Admin Part Coding</button>
+      <button class="nav-item" data-view="rules"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke-width="1.5"><path d="M2.5 3.5h11M2.5 8h11M2.5 12.5h11" stroke-linecap="round"/><circle cx="5.5" cy="3.5" r="1.6" fill="#fff"/><circle cx="10.5" cy="8" r="1.6" fill="#fff"/><circle cx="6.5" cy="12.5" r="1.6" fill="#fff"/></svg>Rule Engine</button>
+      <button class="nav-item"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke-width="1.5"><circle cx="8" cy="8" r="6.2"/><path d="M8 4.5V8l2.5 1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>History</button>
+    </nav>
+    <div class="nav-foot">
+      <button class="nav-item"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke-width="1.5"><circle cx="8" cy="8" r="2.4"/><path d="M8 1.4v1.7M8 12.9v1.7M14.6 8h-1.7M3.1 8H1.4M12.7 3.3l-1.2 1.2M4.5 11.5l-1.2 1.2M12.7 12.7l-1.2-1.2M4.5 4.5 3.3 3.3" stroke-linecap="round"/></svg>Settings</button>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <section class="main">
+
+  <!-- ============ VIEW: PART CODING ============ -->
+  <div class="view" id="view-partcoding">
+    <div class="titlerow">
+      <h1>Part Coding</h1>
+      <span class="subcount" id="pcShowing"></span>
+    </div>
+
+    <div class="toolbar">
+      <select class="ctl" id="pcCustomer" aria-label="Customer scope">
+        <option>Customer: MBA Scope</option>
+        <option>Customer: XTO Energy</option>
+        <option>Customer: Diamondback Energy</option>
+        <option>Customer: Ovintiv</option>
+      </select>
+      <select class="ctl" id="pcScope" aria-label="Coding scope">
+        <option>Scope: Generic</option>
+        <option>Scope: Customer Specific</option>
+        <option>Scope: Strict — No Substitutes</option>
+      </select>
+      <button class="ctl btn" id="pcUpload">Upload</button>
+      <button class="ctl primary" id="pcCode">Code It</button>
+      <button class="ctl btn" id="pcExport">Export</button>
+      <input type="file" id="pcFile" accept=".txt,.csv,text/plain,text/csv" hidden>
+      <span class="spacer"></span>
+      <span class="src">Source: Midland DC</span>
+    </div>
+
+    <div class="paste">
+      <textarea id="pcPaste" spellcheck="false"
+        aria-label="Paste customer part descriptions">1    8" to 4" stainless reducer
+1    20' 8" sch 40 stainless pipe
+2    8" 150# SS Weld Neck Flange
+3    8" schedule 40 stainless weld neck 45 degree elbow
+8" schedule 40 stianless weld neck tee
+1    10" - Lug, DI Body, SS Stem, SS Disc, Resilient Seat, Gear
+1    8" - Lug, SS Body, SS Stem, SS Disc, High Performance, Gear
+1    8" - SS Body and Disc, Viton Seat, Split Disc Swing
+1    Ball, 200 psi, FNPT, FP, SS Body, LO Spring Return Handle, NACE
+1    Bleed Ring w/ 2 x 1/2 in NPT taps
+2    10" 150# SS Weld Neck Flange
+1    10" 150# SS Wide Flange
+1    10" CGI
+1    10" 150 CGI Gasket</textarea>
+    </div>
+
+    <div class="summary">
+      <span class="total" id="pcTotal">Total: 0</span>
+      <button class="cnt g" data-st="Auto"   aria-pressed="false"></button>
+      <button class="cnt b" data-st="Manual" aria-pressed="false"></button>
+      <button class="cnt w" data-st="Review" aria-pressed="false"></button>
+      <button class="cnt r" data-st="RFQ"    aria-pressed="false"></button>
+      <span class="spacer"></span>
+      <span class="proc" id="pcProc" hidden><span class="spin"></span>Matching against item master…</span>
+    </div>
+
+    <div class="tablewrap">
+      <table id="pcTable" style="min-width:1060px">
+        <colgroup>
+          <col style="width:50px"><col style="width:86px"><col style="width:70px">
+          <col style="width:230px"><col style="width:84px"><col>
+          <col style="width:64px"><col style="width:52px"><col style="width:62px">
+          <col style="width:54px"><col style="width:56px">
+        </colgroup>
+        <thead>
+          <tr>
+            <th><button>Mark</button></th>
+            <th><button>Status</button></th>
+            <th><button>Quantity</button></th>
+            <th><button>Customer Description</button></th>
+            <th><button>Part Code</button></th>
+            <th><button>RK Description</button></th>
+            <th><button>RK Inv</button></th>
+            <th><button>MBA</button></th>
+            <th><button>Source</button></th>
+            <th><button>Conf</button></th>
+            <th><button>Reason</button></th>
+          </tr>
+        </thead>
+        <tbody id="pcBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ============ VIEW: PART CODING ADMIN ============ -->
+  <div class="view" id="view-admin" hidden>
+    <div class="titlerow">
+      <h1>Part Coding Admin</h1>
+      <span class="subcount" id="adShowing"></span>
+    </div>
+
+    <div class="toolbar">
+      <select class="ctl" id="adCustomer" aria-label="Filter by customer">
+        <option value="">Customer: All</option>
+        <option value="Diamondback Energy">Diamondback Energy</option>
+        <option value="XTO Energy">XTO Energy</option>
+        <option value="Ovintiv">Ovintiv</option>
+      </select>
+    </div>
+
+    <div class="summary">
+      <span class="total" id="adTotal">Total: 0</span>
+      <button class="cnt g" data-st="Auto"   aria-pressed="false"></button>
+      <button class="cnt b" data-st="Manual" aria-pressed="false"></button>
+      <button class="cnt w" data-st="Review" aria-pressed="false"></button>
+      <button class="cnt r" data-st="RFQ"    aria-pressed="false"></button>
+      <span class="spacer"></span>
+      <span class="bulk" id="adBulk" hidden>
+        <span class="bulkn" id="adBulkN">0 selected</span>
+        <button class="ctl primary" id="adApproveSel">Approve selected</button>
+        <button class="ctl btn danger" id="adRejectSel">Reject selected</button>
+        <button class="ctl ghost" id="adClearSel">Clear</button>
+      </span>
+    </div>
+
+    <div class="tablewrap">
+      <table id="adTable" style="min-width:1120px">
+        <colgroup>
+          <col style="width:34px">
+          <col style="width:116px"><col style="width:46px"><col style="width:82px">
+          <col style="width:68px"><col style="width:178px"><col style="width:78px">
+          <col><col style="width:58px"><col style="width:46px">
+          <col style="width:58px"><col style="width:50px"><col style="width:58px">
+          <col style="width:70px">
+        </colgroup>
+        <thead>
+          <tr>
+            <th class="chk">
+              <input class="cb" type="checkbox" id="adCheckAll"
+                     aria-label="Select all pending lines in view">
+            </th>
+            <th><button>Customer</button></th>
+            <th><button>Mark</button></th>
+            <th><button>Status</button></th>
+            <th><button>Quantity</button></th>
+            <th><button>Customer Description</button></th>
+            <th><button>Part Code</button></th>
+            <th><button>RK Description</button></th>
+            <th><button>RK Inv</button></th>
+            <th><button>MBA</button></th>
+            <th><button>Source</button></th>
+            <th><button>Conf</button></th>
+            <th><button>Reason</button></th>
+            <th><button>Approval</button></th>
+          </tr>
+        </thead>
+        <tbody id="adBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ============ VIEW: RULE ENGINE (unchanged Customer Rules screen) ============ -->
+  <div class="view" id="view-rules" hidden>
+    <div class="titlerow">
+      <h1>Customer Rules</h1>
+      <span class="subcount" id="showing"></span>
+    </div>
+
+    <div class="toolbar">
+      <select class="ctl" id="fCustomer" aria-label="Filter by customer"></select>
+      <select class="ctl" id="fDivision" aria-label="Filter by division"></select>
+      <select class="ctl" id="fCategory" aria-label="Filter by category"></select>
+      <select class="ctl" id="fEnd"      aria-label="Filter by end connection"></select>
+      <input  class="ctl" id="fSearch" type="search" placeholder="Search rules…  (/)" aria-label="Search rules">
+      <button class="ctl ghost" id="btnClear" hidden>Clear filters</button>
+
+      <span class="spacer"></span>
+      <button class="ctl btn" id="btnImport">Import Toolbox</button>
+      <button class="ctl primary" id="btnAdd">+ Add Rule</button>
+      <button class="ctl btn" id="btnExport">Export</button>
+      <input type="file" id="fileInput" accept=".csv,text/csv" hidden>
+    </div>
+
+    <div class="summary">
+      <span class="total" id="ruleTotal">Rules: 0</span>
+      <button class="cnt g" data-type="PREFERENCE"  aria-pressed="false"></button>
+      <button class="cnt b" data-type="REQUIREMENT" aria-pressed="false"></button>
+      <button class="cnt r" data-type="EXCLUSION"   aria-pressed="false"></button>
+      <button class="cnt n" data-type="NOTE"        aria-pressed="false"></button>
+      <span class="spacer"></span>
+      <span class="src">Source: Toolbox Rules 6-9-2026</span>
+      <button class="ctl ghost" id="btnReset">Reset to source</button>
+    </div>
+
+    <div class="tablewrap">
+      <table>
+        <colgroup>
+          <col style="width:150px"><col style="width:104px"><col style="width:106px">
+          <col style="width:68px"><col style="width:88px"><col style="width:96px">
+          <col style="width:168px"><col><col style="width:56px">
+          <col style="width:64px">
+        </colgroup>
+        <thead>
+          <tr id="headRow">
+            <th data-key="customer"><button>Customer<span class="caret">▲</span></button></th>
+            <th data-key="division"><button>Division<span class="caret">▲</span></button></th>
+            <th data-key="category"><button>Category<span class="caret">▲</span></button></th>
+            <th data-key="end"><button>End<span class="caret">▲</span></button></th>
+            <th data-key="size"><button>Size<span class="caret">▲</span></button></th>
+            <th data-key="type"><button>Type<span class="caret">▲</span></button></th>
+            <th data-key="ladder"><button>Brand / Ladder<span class="caret">▲</span></button></th>
+            <th data-key="detail"><button>Rule Detail<span class="caret">▲</span></button></th>
+            <th data-key="active"><button>Active<span class="caret">▲</span></button></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  </section>
+</div>
+
+<!-- ============ ADD / EDIT MODAL ============ -->
+<div class="backdrop" id="backdrop" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <header>
+      <h2 id="modalTitle">Add Rule</h2>
+      <button class="iconbtn" id="btnCloseModal" style="opacity:1" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m4 4 8 8M12 4l-8 8" stroke-linecap="round"/></svg>
+      </button>
+    </header>
+    <div class="body">
+      <div class="grid">
+        <div class="field">
+          <label for="mCustomer">Customer</label>
+          <input id="mCustomer" list="customerList" placeholder="e.g. Diamondback Energy">
+          <datalist id="customerList"></datalist>
+        </div>
+        <div class="field">
+          <label for="mDivision">Division</label>
+          <input id="mDivision" list="divisionList" placeholder="optional">
+          <datalist id="divisionList"></datalist>
+        </div>
+        <div class="field">
+          <label for="mCategory">Category</label>
+          <input id="mCategory" list="categoryList" placeholder="e.g. Ball Valve">
+          <datalist id="categoryList"></datalist>
+        </div>
+        <div class="field">
+          <label for="mEnd">End connection</label>
+          <input id="mEnd" list="endList" placeholder="e.g. Flanged">
+          <datalist id="endList"></datalist>
+        </div>
+        <div class="field">
+          <label for="mSize">Size</label>
+          <input id="mSize" placeholder='e.g. 1/4" – 1/2"'>
+        </div>
+        <div class="field">
+          <label for="mType">Rule type</label>
+          <select id="mType">
+            <option>PREFERENCE</option><option>REQUIREMENT</option>
+            <option>EXCLUSION</option><option>NOTE</option>
+          </select>
+        </div>
+        <div class="field wide">
+          <label>Brand ladder <span class="hint">— ranked, first is preferred</span></label>
+          <div class="ladderedit" id="ladderEdit"></div>
+          <button class="ctl btn" id="btnAddBrand" style="align-self:flex-start;margin-top:2px">+ Add brand</button>
+        </div>
+        <div class="field wide">
+          <label for="mDetail">Rule detail</label>
+          <textarea id="mDetail" placeholder="What the rule says in plain language"></textarea>
+        </div>
+        <div class="field wide" style="flex-direction:row;align-items:center;gap:9px">
+          <button class="tog" id="mActive" aria-pressed="true" aria-label="Active"></button>
+          <span class="hint">Active — inactive rules are kept but not applied during part coding.</span>
+        </div>
+      </div>
+      <p class="err" id="modalErr" hidden></p>
+    </div>
+    <footer>
+      <button class="ctl primary" id="btnSave">Save rule</button>
+      <button class="ctl btn" id="btnCancel">Cancel</button>
+      <span class="spacer"></span>
+      <button class="ctl ghost" id="btnDelete" hidden>Delete rule</button>
+    </footer>
+  </div>
+</div>
+
+<!-- ====== SHARED CANDIDATE PICKER (Part Coding + Part Coding Admin) ====== -->
+<div class="pop" id="pop" role="dialog" aria-modal="false" aria-labelledby="popTitle" hidden>
+  <h3 id="popTitle">Reason</h3>
+  <div class="sub" id="popSub">0 Candidates</div>
+
+  <div class="candhead">
+    <span class="cc">Candidate</span>
+    <span class="cm">Match</span>
+    <span class="ci">Inv</span>
+  </div>
+  <div class="candlist" id="popList"></div>
+
+  <div class="popgrid">
+    <select class="popin" id="popSelect" aria-label="Select candidate"></select>
+    <span class="searchwrap">
+      <input class="popin" id="popSearch" type="search" placeholder="Search Codes" aria-label="Search codes">
+      <svg width="13" height="13" viewBox="0 0 16 16" stroke-width="1.6"><circle cx="7" cy="7" r="4.6"/><path d="m10.6 10.6 3.4 3.4" stroke-linecap="round"/></svg>
+    </span>
+  </div>
+
+  <textarea class="popin" id="popReason" placeholder="Reason for picking" aria-label="Reason for picking"></textarea>
+
+  <div class="popfoot">
+    <span class="spacer"></span>
+    <button class="ctl primary" id="popConfirm">Confirm</button>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script>
+"use strict";
+
+/* ------------------------------------------------------------------ *
+ * Seed data — normalized from "TOOLBOX RULES PER CUSTOMER - VALVES
+ * - 6-9-2026.xlsx", sheet "Valve Rules Summary".
+ * ------------------------------------------------------------------ */
+const SEED = [
+  {"id": "R001", "customer": "Avant Natural Resources", "division": "", "category": "Ball Valve", "end": "Flanged", "size": "", "type": "PREFERENCE", "ladder": ["Delval", "Warren", "Balon"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R002", "customer": "Avant Natural Resources", "division": "", "category": "Butterfly Valve", "end": "", "size": "", "type": "PREFERENCE", "ladder": ["Delval"], "detail": "High Performance & Rubber Seated", "active": true},
+  {"id": "R003", "customer": "Avant Natural Resources", "division": "", "category": "Ball Valve", "end": "Threaded", "size": "", "type": "PREFERENCE", "ladder": ["Delval", "Balon"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R004", "customer": "Avant Natural Resources", "division": "", "category": "Ball Valve", "end": "Grooved", "size": "", "type": "PREFERENCE", "ladder": ["Balon"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R005", "customer": "Avant Natural Resources", "division": "", "category": "Check Valve", "end": "Grooved", "size": "", "type": "PREFERENCE", "ladder": ["Funklok", "Balon"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R006", "customer": "Avant Natural Resources", "division": "", "category": "Check Valve", "end": "Threaded", "size": "", "type": "PREFERENCE", "ladder": ["Top"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R007", "customer": "Avant Natural Resources", "division": "", "category": "Check Valve", "end": "Wafer", "size": "", "type": "PREFERENCE", "ladder": ["FlowTek"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R008", "customer": "Avant Natural Resources", "division": "", "category": "Check Valve", "end": "Flanged", "size": "", "type": "PREFERENCE", "ladder": ["Warren"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R009", "customer": "Admiral", "division": "", "category": "Ball Valve", "end": "Flanged", "size": "", "type": "PREFERENCE", "ladder": ["Delval", "Warren", "Balon"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R010", "customer": "Admiral", "division": "", "category": "Butterfly Valve", "end": "", "size": "", "type": "PREFERENCE", "ladder": ["Delval"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R011", "customer": "Admiral", "division": "", "category": "Ball Valve", "end": "Threaded", "size": "", "type": "PREFERENCE", "ladder": ["Delval", "Balon"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R012", "customer": "Admiral", "division": "", "category": "Ball Valve", "end": "Grooved", "size": "", "type": "PREFERENCE", "ladder": ["Balon"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R013", "customer": "Admiral", "division": "", "category": "Check Valve", "end": "Grooved", "size": "", "type": "PREFERENCE", "ladder": ["Funklok"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R014", "customer": "Admiral", "division": "", "category": "Check Valve", "end": "Threaded", "size": "", "type": "PREFERENCE", "ladder": ["Top"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R015", "customer": "Admiral", "division": "", "category": "Check Valve", "end": "Wafer", "size": "", "type": "PREFERENCE", "ladder": ["Viking"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R016", "customer": "Admiral", "division": "", "category": "Check Valve", "end": "Flanged", "size": "", "type": "PREFERENCE", "ladder": ["Warren"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R017", "customer": "Chevron", "division": "", "category": "Ball Valve", "end": "Flanged", "size": "", "type": "PREFERENCE", "ladder": ["WKM", "Balon"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R018", "customer": "Chevron", "division": "", "category": "Butterfly Valve", "end": "", "size": "", "type": "PREFERENCE", "ladder": ["WKM"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R019", "customer": "Chevron", "division": "", "category": "Ball Valve", "end": "Threaded", "size": "", "type": "PREFERENCE", "ladder": ["Balon", "Navco"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R020", "customer": "Chevron", "division": "", "category": "Ball Valve", "end": "Grooved", "size": "", "type": "PREFERENCE", "ladder": ["Balon"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R021", "customer": "Chevron", "division": "", "category": "Check Valve", "end": "Grooved", "size": "", "type": "PREFERENCE", "ladder": ["Balon"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R022", "customer": "Chevron", "division": "", "category": "Check Valve", "end": "Threaded", "size": "", "type": "PREFERENCE", "ladder": ["Balon"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R023", "customer": "Chevron", "division": "", "category": "Check Valve", "end": "Wafer", "size": "", "type": "PREFERENCE", "ladder": ["Titan"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R024", "customer": "Chevron", "division": "", "category": "Check Valve", "end": "Flanged", "size": "", "type": "PREFERENCE", "ladder": ["Wheatley", "Balon"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R025", "customer": "ConocoPhillips", "division": "", "category": "Ball Valve", "end": "Flanged", "size": "", "type": "PREFERENCE", "ladder": ["Warren", "Delval", "Balon"], "detail": "CS/SS or CS/CS", "active": true},
+  {"id": "R026", "customer": "ConocoPhillips", "division": "", "category": "Ball Valve", "end": "Flanged", "size": "", "type": "PREFERENCE", "ladder": ["Warren", "Delval", "Microfinish"], "detail": "SS/SS", "active": true},
+  {"id": "R027", "customer": "ConocoPhillips", "division": "", "category": "Butterfly Valve", "end": "", "size": "", "type": "PREFERENCE", "ladder": ["Delval"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R028", "customer": "ConocoPhillips", "division": "", "category": "Ball Valve", "end": "Threaded", "size": "", "type": "PREFERENCE", "ladder": ["Delval", "Navco (WKM)", "Balon"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R029", "customer": "ConocoPhillips", "division": "", "category": "Ball Valve", "end": "Grooved", "size": "", "type": "PREFERENCE", "ladder": ["Balon"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R030", "customer": "ConocoPhillips", "division": "", "category": "Check Valve", "end": "Grooved", "size": "", "type": "PREFERENCE", "ladder": ["Funklok", "Balon"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R031", "customer": "ConocoPhillips", "division": "", "category": "Check Valve", "end": "Threaded", "size": "", "type": "PREFERENCE", "ladder": ["Top", "Balon"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R032", "customer": "ConocoPhillips", "division": "", "category": "Check Valve", "end": "Wafer", "size": "", "type": "PREFERENCE", "ladder": ["Titan", "Balon"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R033", "customer": "ConocoPhillips", "division": "", "category": "Check Valve", "end": "Flanged", "size": "", "type": "PREFERENCE", "ladder": ["Warren"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R034", "customer": "Coterra", "division": "", "category": "Ball Valve", "end": "Flanged", "size": "", "type": "PREFERENCE", "ladder": ["Warren", "Delval", "Balon"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R035", "customer": "Coterra", "division": "", "category": "Ball Valve", "end": "Flanged", "size": "", "type": "REQUIREMENT", "ladder": [], "detail": "316SS/CF8M trim required — Facility/Upstream & SWD/Midstream", "active": true},
+  {"id": "R036", "customer": "Coterra", "division": "", "category": "Ball Valve", "end": "Flanged", "size": "", "type": "NOTE", "ladder": [], "detail": "ENP trim acceptable per customer approval", "active": true},
+  {"id": "R037", "customer": "Coterra", "division": "", "category": "Butterfly Valve", "end": "", "size": "", "type": "PREFERENCE", "ladder": ["Delval"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R038", "customer": "Coterra", "division": "", "category": "Ball Valve", "end": "Threaded", "size": "", "type": "PREFERENCE", "ladder": ["Delval", "Navco", "Balon"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R039", "customer": "Coterra", "division": "", "category": "Ball Valve", "end": "Threaded", "size": "1/4\"–1/2\"", "type": "REQUIREMENT", "ladder": [], "detail": "1/4\"–1/2\" = Full SS 316", "active": true},
+  {"id": "R040", "customer": "Coterra", "division": "", "category": "Ball Valve", "end": "Threaded", "size": "", "type": "REQUIREMENT", "ladder": [], "detail": "All 3000# = Balon (LS & LM Series)", "active": true},
+  {"id": "R041", "customer": "Coterra", "division": "", "category": "Ball Valve", "end": "Grooved", "size": "", "type": "PREFERENCE", "ladder": ["Balon"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R042", "customer": "Coterra", "division": "", "category": "Check Valve", "end": "Grooved", "size": "", "type": "PREFERENCE", "ladder": ["Funklok", "Balon"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R043", "customer": "Coterra", "division": "", "category": "Check Valve", "end": "Threaded", "size": "", "type": "PREFERENCE", "ladder": ["Balon", "Warren", "WNS"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R044", "customer": "Coterra", "division": "", "category": "Check Valve", "end": "Threaded", "size": "1/4\"–1/2\"", "type": "REQUIREMENT", "ladder": [], "detail": "1/4\"–1/2\" = Full SS 316", "active": true},
+  {"id": "R045", "customer": "Coterra", "division": "", "category": "Check Valve", "end": "Wafer", "size": "", "type": "PREFERENCE", "ladder": ["Crane (Duo-Chek)", "DFT", "Titan", "Keckley"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R046", "customer": "Coterra", "division": "", "category": "Check Valve", "end": "Wafer", "size": "", "type": "NOTE", "ladder": [], "detail": "SWD Facilities: DFT preferred", "active": true},
+  {"id": "R047", "customer": "Coterra", "division": "", "category": "Check Valve", "end": "Flanged", "size": "", "type": "PREFERENCE", "ladder": ["Warren", "WKM", "Balon"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R048", "customer": "Coterra", "division": "", "category": "Check Valve", "end": "Flanged", "size": "", "type": "REQUIREMENT", "ladder": [], "detail": "Full SS = Warren only", "active": true},
+  {"id": "R049", "customer": "Coterra", "division": "", "category": "—", "end": "", "size": "", "type": "NOTE", "ladder": [], "detail": "Flanged End: WARREN & DELVAL reprioritized on SWD/Midstream requests", "active": true},
+  {"id": "R050", "customer": "Coterra", "division": "", "category": "—", "end": "", "size": "", "type": "NOTE", "ladder": [], "detail": "Microfinish also reprioritized on SWD/Midstream", "active": true},
+  {"id": "R051", "customer": "Continental", "division": "", "category": "Ball Valve", "end": "Flanged", "size": "", "type": "PREFERENCE", "ladder": ["Balon", "Delval"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R052", "customer": "Continental", "division": "", "category": "Butterfly Valve", "end": "", "size": "", "type": "PREFERENCE", "ladder": ["Delval"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R053", "customer": "Continental", "division": "", "category": "Ball Valve", "end": "Threaded", "size": "", "type": "PREFERENCE", "ladder": ["Balon", "Delval"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R054", "customer": "Continental", "division": "", "category": "Ball Valve", "end": "Grooved", "size": "", "type": "PREFERENCE", "ladder": ["Balon"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R055", "customer": "Continental", "division": "", "category": "Check Valve", "end": "Grooved", "size": "", "type": "PREFERENCE", "ladder": ["Funklok"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R056", "customer": "Continental", "division": "", "category": "Check Valve", "end": "Threaded", "size": "", "type": "PREFERENCE", "ladder": ["Balon"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R057", "customer": "Continental", "division": "", "category": "Check Valve", "end": "Wafer", "size": "", "type": "PREFERENCE", "ladder": ["Flo Tek"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R058", "customer": "Continental", "division": "", "category": "Check Valve", "end": "Flanged", "size": "", "type": "PREFERENCE", "ladder": ["Warren", "Balon"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R059", "customer": "Devon", "division": "", "category": "Ball Valve", "end": "Flanged", "size": "", "type": "PREFERENCE", "ladder": ["Balon", "Cameron (Navco/WKM)", "Warren", "CNC", "Microfinish", "Kitz"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R060", "customer": "Devon", "division": "", "category": "Butterfly Valve", "end": "", "size": "", "type": "PREFERENCE", "ladder": ["Delval"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R061", "customer": "Devon", "division": "", "category": "Ball Valve", "end": "Threaded", "size": "", "type": "PREFERENCE", "ladder": ["Balon"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R062", "customer": "Devon", "division": "", "category": "Ball Valve", "end": "Grooved", "size": "", "type": "PREFERENCE", "ladder": ["Balon"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R063", "customer": "Devon", "division": "", "category": "Check Valve", "end": "Grooved", "size": "", "type": "PREFERENCE", "ladder": ["Balon"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R064", "customer": "Devon", "division": "", "category": "Check Valve", "end": "Threaded", "size": "", "type": "PREFERENCE", "ladder": ["Balon"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R065", "customer": "Devon", "division": "", "category": "—", "end": "", "size": "", "type": "NOTE", "ladder": [], "detail": "Balon is 1st choice on ALL ball & check valves", "active": true},
+  {"id": "R066", "customer": "Devon", "division": "", "category": "—", "end": "", "size": "", "type": "NOTE", "ladder": [], "detail": "Alternates (per pricing/availability): Cameron (Navco/WKM), Warren, CNC, Microfinish, Kitz", "active": true},
+  {"id": "R067", "customer": "Devon", "division": "", "category": "—", "end": "", "size": "", "type": "NOTE", "ladder": [], "detail": "Refer to AML for additional options", "active": true},
+  {"id": "R068", "customer": "Diamondback Energy", "division": "", "category": "Ball Valve", "end": "Flanged", "size": "", "type": "PREFERENCE", "ladder": ["Delval", "Warren"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R069", "customer": "Diamondback Energy", "division": "", "category": "Ball Valve", "end": "Flanged", "size": "", "type": "EXCLUSION", "ladder": [], "detail": "Always FP & CS/SS — ENP NOT ACCEPTED", "active": true},
+  {"id": "R070", "customer": "Diamondback Energy", "division": "", "category": "Ball Valve", "end": "Flanged", "size": "≤6\" / ≥8\"", "type": "REQUIREMENT", "ladder": [], "detail": "≤6\" = Floater; ≥8\" = Trunnion", "active": true},
+  {"id": "R071", "customer": "Diamondback Energy", "division": "", "category": "Butterfly Valve", "end": "", "size": "", "type": "PREFERENCE", "ladder": ["Delval"], "detail": "SS/SS", "active": true},
+  {"id": "R072", "customer": "Diamondback Energy", "division": "", "category": "Ball Valve", "end": "Threaded", "size": "", "type": "PREFERENCE", "ladder": ["Delval", "Navco", "Balon"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R073", "customer": "Diamondback Energy", "division": "", "category": "Ball Valve", "end": "Grooved", "size": "", "type": "PREFERENCE", "ladder": ["Balon", "Smith Cooper"], "detail": "CS/NACE", "active": true},
+  {"id": "R074", "customer": "Diamondback Energy", "division": "", "category": "Check Valve", "end": "Grooved", "size": "", "type": "PREFERENCE", "ladder": ["Funklok"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R075", "customer": "Diamondback Energy", "division": "", "category": "Check Valve", "end": "Threaded", "size": "", "type": "PREFERENCE", "ladder": ["Balon"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R076", "customer": "Diamondback Energy", "division": "", "category": "Check Valve", "end": "Wafer", "size": "", "type": "PREFERENCE", "ladder": ["Titan", "Flo Tek"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R077", "customer": "Diamondback Energy", "division": "", "category": "Check Valve", "end": "Flanged", "size": "", "type": "PREFERENCE", "ladder": ["Warren"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R078", "customer": "Ovintiv", "division": "", "category": "Ball Valve", "end": "Flanged", "size": "", "type": "PREFERENCE", "ladder": ["Delval", "Warren", "Balon"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R079", "customer": "Ovintiv", "division": "", "category": "Butterfly Valve", "end": "", "size": "", "type": "PREFERENCE", "ladder": ["Delval"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R080", "customer": "Ovintiv", "division": "", "category": "Ball Valve", "end": "Threaded", "size": "", "type": "PREFERENCE", "ladder": ["Delval", "Navco"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R081", "customer": "Ovintiv", "division": "", "category": "Ball Valve", "end": "Threaded", "size": "1\" & below", "type": "REQUIREMENT", "ladder": [], "detail": "1\" & below w/ 2000 PSI rating = Full SS", "active": true},
+  {"id": "R082", "customer": "Ovintiv", "division": "", "category": "Ball Valve", "end": "Grooved", "size": "", "type": "PREFERENCE", "ladder": ["Balon"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R083", "customer": "Ovintiv", "division": "", "category": "Check Valve", "end": "Grooved", "size": "", "type": "PREFERENCE", "ladder": ["Funklok", "Top Valve"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R084", "customer": "Ovintiv", "division": "", "category": "Check Valve", "end": "Threaded", "size": "", "type": "PREFERENCE", "ladder": ["Balon", "Warren"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R085", "customer": "Ovintiv", "division": "", "category": "Check Valve", "end": "Wafer", "size": "", "type": "PREFERENCE", "ladder": ["Flo Tek", "Viking"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R086", "customer": "Ovintiv", "division": "", "category": "Check Valve", "end": "Flanged", "size": "≤6\" / ≥8\"", "type": "PREFERENCE", "ladder": ["Balon", "Wheatly"], "detail": "Flanged Swing Check — Balon ≤6\" — Wheatly ≥8\"", "active": true},
+  {"id": "R087", "customer": "Ovintiv", "division": "", "category": "—", "end": "", "size": "", "type": "EXCLUSION", "ladder": [], "detail": "Spring Return Ball Valves: JAG ONLY — DO NOT sell Keckley", "active": true},
+  {"id": "R088", "customer": "Permian Resources", "division": "", "category": "Ball Valve", "end": "Flanged", "size": "", "type": "PREFERENCE", "ladder": ["Delval", "Warren", "Balon"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R089", "customer": "Permian Resources", "division": "", "category": "Ball Valve", "end": "Flanged", "size": "", "type": "NOTE", "ladder": [], "detail": "Balon for Hairpins", "active": true},
+  {"id": "R090", "customer": "Permian Resources", "division": "", "category": "Butterfly Valve", "end": "", "size": "", "type": "PREFERENCE", "ladder": ["Delval"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R091", "customer": "Permian Resources", "division": "", "category": "Ball Valve", "end": "Threaded", "size": "", "type": "PREFERENCE", "ladder": ["Delval", "Navco"], "detail": "MUST BE FP", "active": true},
+  {"id": "R092", "customer": "Permian Resources", "division": "", "category": "Ball Valve", "end": "Grooved", "size": "", "type": "PREFERENCE", "ladder": ["Balon"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R093", "customer": "Permian Resources", "division": "", "category": "Check Valve", "end": "Grooved", "size": "", "type": "PREFERENCE", "ladder": ["Funklok", "Top Valve"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R094", "customer": "Permian Resources", "division": "", "category": "Check Valve", "end": "Threaded", "size": "", "type": "PREFERENCE", "ladder": ["Balon", "Warren"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R095", "customer": "Permian Resources", "division": "", "category": "Check Valve", "end": "Wafer", "size": "", "type": "PREFERENCE", "ladder": ["Flo Tek", "Viking"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R096", "customer": "Permian Resources", "division": "", "category": "Check Valve", "end": "Flanged", "size": "", "type": "PREFERENCE", "ladder": ["Warren"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R097", "customer": "Permian Resources", "division": "", "category": "—", "end": "", "size": "", "type": "EXCLUSION", "ladder": [], "detail": "Butterfly: SS/Viton rubber seated preferred; Full SS/SS HP Firesafe acceptable; NO CNC", "active": true},
+  {"id": "R098", "customer": "Permian Resources", "division": "", "category": "—", "end": "", "size": "", "type": "REQUIREMENT", "ladder": [], "detail": "Threaded & Fractional: MUST be Full Port (FP)", "active": true},
+  {"id": "R099", "customer": "Pilot Water Solutions", "division": "", "category": "Ball Valve", "end": "Flanged", "size": "", "type": "PREFERENCE", "ladder": ["Delval", "Warren", "Microfinish"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R100", "customer": "Pilot Water Solutions", "division": "", "category": "Butterfly Valve", "end": "", "size": "", "type": "PREFERENCE", "ladder": ["Delval"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R101", "customer": "Pilot Water Solutions", "division": "", "category": "Ball Valve", "end": "Threaded", "size": "", "type": "PREFERENCE", "ladder": ["Delval", "Navco"], "detail": "MUST BE FP", "active": true},
+  {"id": "R102", "customer": "Pilot Water Solutions", "division": "", "category": "Check Valve", "end": "Wafer", "size": "", "type": "PREFERENCE", "ladder": ["DFT", "Titan"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R103", "customer": "Pilot Water Solutions", "division": "", "category": "Check Valve", "end": "Flanged", "size": "", "type": "PREFERENCE", "ladder": ["Warren"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R104", "customer": "XTO Energy", "division": "Midland Basin", "category": "Ball Valve", "end": "Flanged", "size": "", "type": "PREFERENCE", "ladder": ["Delval", "Warren", "Balon"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R105", "customer": "XTO Energy", "division": "Midland Basin", "category": "Butterfly Valve", "end": "", "size": "", "type": "PREFERENCE", "ladder": ["Delval"], "detail": "SS/SS Firesafe", "active": true},
+  {"id": "R106", "customer": "XTO Energy", "division": "Midland Basin", "category": "Butterfly Valve", "end": "", "size": "", "type": "PREFERENCE", "ladder": ["PWM"], "detail": "High Performance Firesafe ONLY", "active": true},
+  {"id": "R107", "customer": "XTO Energy", "division": "Midland Basin", "category": "Ball Valve", "end": "Threaded", "size": "", "type": "PREFERENCE", "ladder": ["Delval", "Balon"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R108", "customer": "XTO Energy", "division": "Midland Basin", "category": "Ball Valve", "end": "Grooved", "size": "", "type": "PREFERENCE", "ladder": ["Balon"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R109", "customer": "XTO Energy", "division": "Midland Basin", "category": "Check Valve", "end": "Grooved", "size": "", "type": "PREFERENCE", "ladder": ["Funklok", "Balon"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R110", "customer": "XTO Energy", "division": "Midland Basin", "category": "Check Valve", "end": "Threaded", "size": "", "type": "PREFERENCE", "ladder": ["Balon"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R111", "customer": "XTO Energy", "division": "Midland Basin", "category": "Check Valve", "end": "Wafer", "size": "", "type": "PREFERENCE", "ladder": ["DFT", "Titan"], "detail": "Ranked brand ladder", "active": true},
+  {"id": "R112", "customer": "XTO Energy", "division": "Midland Basin", "category": "Check Valve", "end": "Flanged", "size": "", "type": "PREFERENCE", "ladder": ["Warren", "Balon", "Wheatley"], "detail": "Flanged End Check", "active": true},
+  {"id": "R113", "customer": "XTO Energy", "division": "Midland Basin", "category": "Check Valve", "end": "Flanged", "size": "", "type": "PREFERENCE", "ladder": ["Cameron", "SCV"], "detail": "Piston Check", "active": true},
+  {"id": "R114", "customer": "XTO Energy", "division": "Midland Basin", "category": "—", "end": "", "size": "", "type": "NOTE", "ladder": [], "detail": "LEGACY PIONEER (MIDLAND BASIN) ONLY — NOT reflective of XTO Delaware", "active": true},
+  {"id": "R115", "customer": "XTO Energy", "division": "Midland Basin", "category": "—", "end": "", "size": "", "type": "NOTE", "ladder": [], "detail": "Piston Check: 1st Cameron | 2nd SCV", "active": true}
+];
+
+const STORE_KEY = "rk_customer_rules_v1";
+const TYPES = ["PREFERENCE", "REQUIREMENT", "EXCLUSION", "NOTE"];
+const COLUMNS = ["customer", "division", "category", "end", "size",
+                 "type", "ladder", "detail", "active"];
+const HEADERS = ["Customer", "Division", "Category", "End", "Size",
+                 "Type", "Brand / Ladder", "Rule Detail", "Active"];
+
+let rules = load();
+let sort = { key: "customer", dir: 1 };
+let typeFilter = new Set();
+let editingId = null;
+
+/* ---------------------------- storage ---------------------------- */
+function load() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) { /* fall through to seed */ }
+  return structuredClone(SEED);
+}
+function save() {
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify(rules));
+  } catch (e) {
+    toast("Couldn't save to this browser — changes last until reload.");
+  }
+}
+
+/* ---------------------------- helpers ---------------------------- */
+const $ = (sel) => document.querySelector(sel);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g,
+  (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function nextId() {
+  const nums = rules.map(r => parseInt(String(r.id).replace(/\D/g, ""), 10) || 0);
+  return "R" + String(Math.max(0, ...nums) + 1).padStart(3, "0");
+}
+
+let toastTimer;
+function toast(msg) {
+  const t = $("#toast");
+  t.textContent = msg;
+  t.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.hidden = true; }, 2800);
+}
+
+function uniq(key) {
+  return [...new Set(rules.map(r => (r[key] || "").trim()).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b));
+}
+
+/* --------------------------- filtering --------------------------- */
+function activeFilters() {
+  return {
+    customer: $("#fCustomer").value,
+    division: $("#fDivision").value,
+    category: $("#fCategory").value,
+    end: $("#fEnd").value,
+    q: $("#fSearch").value.trim().toLowerCase(),
+  };
+}
+
+/** Rows matching everything except the type pills — the pills' counts are
+ *  computed against this set so they stay meaningful while filtering. */
+function baseFiltered() {
+  const f = activeFilters();
+  return rules.filter(r => {
+    if (f.customer && r.customer !== f.customer) return false;
+    if (f.division && (r.division || "") !== f.division) return false;
+    if (f.category && r.category !== f.category) return false;
+    if (f.end && (r.end || "") !== f.end) return false;
+    if (f.q) {
+      const hay = [r.customer, r.division, r.category, r.end, r.size,
+                   r.type, (r.ladder || []).join(" "), r.detail]
+                   .join(" ").toLowerCase();
+      if (!hay.includes(f.q)) return false;
+    }
+    return true;
+  });
+}
+
+function visibleRules() {
+  let out = baseFiltered();
+  if (typeFilter.size) out = out.filter(r => typeFilter.has(r.type));
+  const { key, dir } = sort;
+  return out.sort((a, b) => {
+    let av = a[key], bv = b[key];
+    if (key === "ladder") { av = (av || []).join(" "); bv = (bv || []).join(" "); }
+    if (key === "active") { av = av ? 1 : 0; bv = bv ? 1 : 0; return (av - bv) * dir; }
+    if (key === "type") {
+      return (TYPES.indexOf(av) - TYPES.indexOf(bv)) * dir
+             || a.customer.localeCompare(b.customer);
+    }
+    const c = String(av || "").localeCompare(String(bv || ""), undefined, { numeric: true });
+    return c * dir || a.id.localeCompare(b.id);
+  });
+}
+
+/* --------------------------- rendering --------------------------- */
+function renderSelect(el, label, values, keep) {
+  const cur = keep ?? el.value;
+  el.innerHTML = `<option value="">${label}: All</option>` +
+    values.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join("");
+  el.value = values.includes(cur) ? cur : "";
+}
+
+function renderFilters() {
+  renderSelect($("#fCustomer"), "Customer", uniq("customer"));
+  // Divisions are scoped to the selected customer.
+  const cust = $("#fCustomer").value;
+  const divs = [...new Set(rules
+    .filter(r => !cust || r.customer === cust)
+    .map(r => (r.division || "").trim()).filter(Boolean))].sort();
+  renderSelect($("#fDivision"), "Division", divs);
+  renderSelect($("#fCategory"), "Category", uniq("category"));
+  renderSelect($("#fEnd"), "End", uniq("end"));
+
+  const f = activeFilters();
+  const any = f.customer || f.division || f.category || f.end || f.q || typeFilter.size;
+  $("#btnClear").hidden = !any;
+}
+
+function ladderHTML(list) {
+  if (!list || !list.length) return '<span class="dash">—</span>';
+  return '<span class="ladder">' + list.map((b, i) =>
+    `<span class="brand"><span class="rank">${i + 1}</span>${esc(b)}</span>`).join("") +
+    "</span>";
+}
+
+function render() {
+  renderFilters();
+
+  const base = baseFiltered();
+  const counts = Object.fromEntries(TYPES.map(t =>
+    [t, base.filter(r => r.type === t).length]));
+  document.querySelectorAll("#view-rules .cnt").forEach(btn => {
+    const t = btn.dataset.type;
+    btn.textContent = t[0] + t.slice(1).toLowerCase() + " " + counts[t];
+    btn.setAttribute("aria-pressed", typeFilter.has(t));
+    btn.classList.toggle("dim", counts[t] === 0 && !typeFilter.has(t));
+  });
+
+  const rows = visibleRules();
+  $("#ruleTotal").textContent = "Rules: " + base.length;
+  $("#showing").textContent = rows.length === rules.length
+    ? `${rules.length} total`
+    : `showing ${rows.length} of ${rules.length}`;
+
+  document.querySelectorAll("#headRow th[data-key]").forEach(th => {
+    const on = th.dataset.key === sort.key;
+    th.classList.toggle("sorted", on);
+    th.querySelector(".caret").textContent = on && sort.dir < 0 ? "▼" : "▲";
+  });
+
+  const tb = $("#tbody");
+  if (!rows.length) {
+    tb.innerHTML = `<tr class="empty"><td colspan="10">
+      No rules match these filters. <button class="ctl ghost" onclick="clearFilters()">Clear filters</button>
+      </td></tr>`;
+    return;
+  }
+
+  tb.innerHTML = rows.map(r => `
+    <tr data-id="${r.id}" class="${r.active ? "" : "off"}">
+      <td class="cust">${esc(r.customer)}</td>
+      <td>${r.division ? `<span class="chip">${esc(r.division)}</span>`
+                       : '<span class="dash">—</span>'}</td>
+      <td>${esc(r.category) || '<span class="dash">—</span>'}</td>
+      <td>${esc(r.end) || '<span class="dash">—</span>'}</td>
+      <td class="num">${esc(r.size) || '<span class="dash">—</span>'}</td>
+      <td><span class="tp ${r.type}">${r.type}</span></td>
+      <td>${ladderHTML(r.ladder)}</td>
+      <td>${esc(r.detail)}</td>
+      <td><button class="tog" data-act="toggle" aria-pressed="${!!r.active}"
+                  aria-label="Toggle active"></button></td>
+      <td>
+        <div class="rowact">
+          <button class="iconbtn" data-act="edit" aria-label="Edit rule">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11.2 2.3 13.7 4.8 5.5 13H3v-2.5z" stroke-linejoin="round"/></svg>
+          </button>
+          <button class="iconbtn danger" data-act="delete" aria-label="Delete rule">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5 5 13.5h6l.5-9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+      </td>
+    </tr>`).join("");
+}
+
+/* ---------------------------- actions ---------------------------- */
+function clearFilters() {
+  ["#fCustomer", "#fDivision", "#fCategory", "#fEnd"].forEach(s => $(s).value = "");
+  $("#fSearch").value = "";
+  typeFilter.clear();
+  render();
+}
+window.clearFilters = clearFilters;
+
+$("#tbody").addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-act]");
+  if (!btn) return;
+  const id = btn.closest("tr").dataset.id;
+  const rule = rules.find(r => r.id === id);
+  if (!rule) return;
+
+  if (btn.dataset.act === "toggle") {
+    rule.active = !rule.active;
+    save();
+    render();
+    toast(`${rule.id} ${rule.active ? "activated" : "deactivated"}`);
+  } else if (btn.dataset.act === "edit") {
+    openModal(rule);
+  } else if (btn.dataset.act === "delete") {
+    rules = rules.filter(r => r.id !== id);
+    save();
+    render();
+    toast(`Deleted ${id} — ${rule.customer}, ${rule.category || "general"}`);
+  }
+});
+
+document.querySelectorAll("#headRow th[data-key]").forEach(th => {
+  th.querySelector("button").addEventListener("click", () => {
+    const k = th.dataset.key;
+    sort = { key: k, dir: sort.key === k ? -sort.dir : 1 };
+    render();
+  });
+});
+
+["#fCustomer", "#fDivision", "#fCategory", "#fEnd"].forEach(s =>
+  $(s).addEventListener("change", render));
+$("#fSearch").addEventListener("input", render);
+$("#btnClear").addEventListener("click", clearFilters);
+
+document.querySelectorAll("#view-rules .cnt").forEach(btn =>
+  btn.addEventListener("click", () => {
+    const t = btn.dataset.type;
+    typeFilter.has(t) ? typeFilter.delete(t) : typeFilter.add(t);
+    render();
+  }));
+
+/* ----------------------------- modal ----------------------------- */
+function ladderRow(value) {
+  const div = document.createElement("div");
+  div.className = "ledrow";
+  div.innerHTML = `
+    <span class="rank"></span>
+    <input class="brandin" value="${esc(value)}" placeholder="Brand name">
+    <button class="iconbtn" data-led="up"   style="opacity:1" aria-label="Move up">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 12V4M4.5 7.5 8 4l3.5 3.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <button class="iconbtn" data-led="down" style="opacity:1" aria-label="Move down">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 4v8M4.5 8.5 8 12l3.5-3.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <button class="iconbtn danger" data-led="remove" style="opacity:1" aria-label="Remove brand">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m4 4 8 8M12 4l-8 8" stroke-linecap="round"/></svg></button>`;
+  return div;
+}
+function renumberLadder() {
+  [...$("#ladderEdit").children].forEach((row, i) =>
+    row.querySelector(".rank").textContent = i + 1);
+}
+$("#ladderEdit").addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-led]");
+  if (!btn) return;
+  const row = btn.closest(".ledrow");
+  const box = $("#ladderEdit");
+  if (btn.dataset.led === "remove") row.remove();
+  if (btn.dataset.led === "up" && row.previousElementSibling)
+    box.insertBefore(row, row.previousElementSibling);
+  if (btn.dataset.led === "down" && row.nextElementSibling)
+    box.insertBefore(row.nextElementSibling, row);
+  renumberLadder();
+});
+$("#btnAddBrand").addEventListener("click", () => {
+  const row = ladderRow("");
+  $("#ladderEdit").appendChild(row);
+  renumberLadder();
+  row.querySelector("input").focus();
+});
+
+function fillDatalists() {
+  const map = { customerList: "customer", divisionList: "division",
+                categoryList: "category", endList: "end" };
+  for (const [listId, key] of Object.entries(map)) {
+    $("#" + listId).innerHTML = uniq(key)
+      .map(v => `<option value="${esc(v)}">`).join("");
+  }
+}
+
+function openModal(rule) {
+  fillDatalists();
+  editingId = rule ? rule.id : null;
+  $("#modalTitle").textContent = rule ? `Edit rule ${rule.id}` : "Add Rule";
+  $("#mCustomer").value = rule?.customer || $("#fCustomer").value || "";
+  $("#mDivision").value = rule?.division || "";
+  $("#mCategory").value = rule?.category || $("#fCategory").value || "";
+  $("#mEnd").value = rule?.end || "";
+  $("#mSize").value = rule?.size || "";
+  $("#mType").value = rule?.type || "PREFERENCE";
+  $("#mDetail").value = rule?.detail || "";
+  $("#mActive").setAttribute("aria-pressed", rule ? !!rule.active : true);
+  $("#btnDelete").hidden = !rule;
+  $("#modalErr").hidden = true;
+
+  const box = $("#ladderEdit");
+  box.innerHTML = "";
+  (rule?.ladder || []).forEach(b => box.appendChild(ladderRow(b)));
+  renumberLadder();
+
+  $("#backdrop").hidden = false;
+  $("#mCustomer").focus();
+}
+function closeModal() { $("#backdrop").hidden = true; editingId = null; }
+
+$("#mActive").addEventListener("click", (e) => {
+  const on = e.currentTarget.getAttribute("aria-pressed") === "true";
+  e.currentTarget.setAttribute("aria-pressed", String(!on));
+});
+$("#btnAdd").addEventListener("click", () => openModal(null));
+$("#btnCancel").addEventListener("click", closeModal);
+$("#btnCloseModal").addEventListener("click", closeModal);
+$("#backdrop").addEventListener("click", (e) => {
+  if (e.target === $("#backdrop")) closeModal();
+});
+$("#btnDelete").addEventListener("click", () => {
+  const id = editingId;
+  rules = rules.filter(r => r.id !== id);
+  save(); closeModal(); render();
+  toast("Deleted " + id);
+});
+
+$("#btnSave").addEventListener("click", () => {
+  const ladder = [...document.querySelectorAll("#ladderEdit .brandin")]
+    .map(i => i.value.trim()).filter(Boolean);
+  const rec = {
+    customer: $("#mCustomer").value.trim(),
+    division: $("#mDivision").value.trim(),
+    category: $("#mCategory").value.trim(),
+    end: $("#mEnd").value.trim(),
+    size: $("#mSize").value.trim(),
+    type: $("#mType").value,
+    ladder,
+    detail: $("#mDetail").value.trim(),
+    active: $("#mActive").getAttribute("aria-pressed") === "true",
+  };
+
+  const problems = [];
+  if (!rec.customer) problems.push("Customer is required.");
+  if (!rec.detail && !ladder.length)
+    problems.push("Add a rule detail or at least one brand.");
+  if (rec.type === "PREFERENCE" && !ladder.length)
+    problems.push("A preference rule needs a ranked brand ladder.");
+  if (problems.length) {
+    const err = $("#modalErr");
+    err.textContent = problems.join(" ");
+    err.hidden = false;
+    return;
+  }
+
+  if (editingId) {
+    Object.assign(rules.find(r => r.id === editingId), rec);
+    toast("Updated " + editingId);
+  } else {
+    rec.id = nextId();
+    rules.push(rec);
+    toast("Added " + rec.id);
+  }
+  save(); closeModal(); render();
+});
+
+/* ------------------------- import / export ------------------------ */
+function toCSV(rows) {
+  const q = (v) => {
+    const s = String(v ?? "");
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+  const lines = [HEADERS.map(q).join(",")];
+  for (const r of rows) {
+    lines.push([r.customer, r.division, r.category, r.end, r.size, r.type,
+                (r.ladder || []).join(" | "), r.detail,
+                r.active ? "Yes" : "No"].map(q).join(","));
+  }
+  return lines.join("\r\n");
+}
+
+/** Minimal RFC-4180 parser — handles quoted fields, embedded commas/newlines. */
+function parseCSV(text) {
+  const rows = [];
+  let row = [], field = "", inQuotes = false;
+  text = text.replace(/^﻿/, "").replace(/\r\n/g, "\n");
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"' && text[i + 1] === '"') { field += '"'; i++; }
+      else if (c === '"') inQuotes = false;
+      else field += c;
+    } else if (c === '"') inQuotes = true;
+    else if (c === ",") { row.push(field); field = ""; }
+    else if (c === "\n") { row.push(field); rows.push(row); row = []; field = ""; }
+    else field += c;
+  }
+  if (field !== "" || row.length) { row.push(field); rows.push(row); }
+  return rows.filter(r => r.some(v => v.trim() !== ""));
+}
+
+$("#btnExport").addEventListener("click", () => {
+  const rows = visibleRules();
+  const blob = new Blob([toCSV(rows)], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "customer_rules_" + new Date().toISOString().slice(0, 10) + ".csv";
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast(`Exported ${rows.length} rule${rows.length === 1 ? "" : "s"} to CSV`);
+});
+
+$("#btnImport").addEventListener("click", () => $("#fileInput").click());
+$("#fileInput").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const rows = parseCSV(reader.result);
+      if (rows.length < 2) throw new Error("no data rows");
+      const head = rows[0].map(h => h.trim().toLowerCase());
+      const at = (name) => head.indexOf(name.toLowerCase());
+      const idx = HEADERS.map(at);
+      if (idx[0] < 0 || idx[5] < 0)
+        throw new Error("expected columns: " + HEADERS.join(", "));
+
+      const imported = rows.slice(1).map(r => {
+        const get = (i) => (i >= 0 ? (r[i] || "").trim() : "");
+        return {
+          customer: get(idx[0]), division: get(idx[1]), category: get(idx[2]),
+          end: get(idx[3]), size: get(idx[4]),
+          type: (get(idx[5]).toUpperCase() || "NOTE"),
+          ladder: get(idx[6]).split(/\s*[|>]\s*/).map(s =>
+            s.replace(/^\d+[.)]\s*/, "").trim()).filter(Boolean),
+          detail: get(idx[7]),
+          active: !/^(no|false|0|off)$/i.test(get(idx[8]) || "yes"),
+        };
+      }).filter(r => r.customer);
+
+      imported.forEach(r => { if (!TYPES.includes(r.type)) r.type = "NOTE"; });
+      rules = imported.map((r, i) => ({ ...r, id: "R" + String(i + 1).padStart(3, "0") }));
+      typeFilter.clear();
+      save(); render();
+      toast(`Imported ${rules.length} rules from ${file.name}`);
+    } catch (err) {
+      toast("Import failed — " + err.message);
+    }
+    e.target.value = "";
+  };
+  reader.readAsText(file);
+});
+
+$("#btnReset").addEventListener("click", () => {
+  rules = structuredClone(SEED);
+  typeFilter.clear();
+  clearFilters();
+  save();
+  toast(`Reset to Toolbox source — ${rules.length} rules`);
+});
+
+/* --------------------------- keyboard ---------------------------- */
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !$("#backdrop").hidden) closeModal();
+  if (e.key === "/" && !$("#view-rules").hidden
+      && document.activeElement.tagName !== "INPUT"
+      && document.activeElement.tagName !== "TEXTAREA") {
+    e.preventDefault();
+    $("#fSearch").focus();
+  }
+});
+
+render();
+</script>
+
+<script>
+"use strict";
+
+/* ==================================================================== *
+ *  Part Coding  +  Part Coding Admin
+ *
+ *  Reuses the shell, the .ctl / .cnt / .summary / table patterns and the
+ *  toast() / esc() / $() helpers declared in the Rule Engine script above.
+ *  The Rule Engine's own logic is untouched; its pill queries were scoped
+ *  to "#view-rules .cnt" so the two sets of pills don't collide.
+ * ==================================================================== */
+
+/* ---------------------------- view switching ---------------------------- */
+const VIEWS = {
+  partcoding: { sel: "#view-partcoding", title: "Part Coding" },
+  admin:      { sel: "#view-admin",      title: "Part Coding Admin" },
+  rules:      { sel: "#view-rules",      title: "Customer Rules" },
+};
+
+function showView(name) {
+  closePop();
+  for (const [k, v] of Object.entries(VIEWS)) $(v.sel).hidden = (k !== name);
+  document.querySelectorAll(".nav-item[data-view]").forEach(b =>
+    b.classList.toggle("active", b.dataset.view === name));
+  document.title = VIEWS[name].title + " — RK Supply";
+}
+document.querySelectorAll(".nav-item[data-view]").forEach(b =>
+  b.addEventListener("click", () => showView(b.dataset.view)));
+
+/* ------------------------- candidate part codes -------------------------
+ * Keyed by item family so the same list can back a row on either screen.
+ * "fl10" is reproduced exactly as the wireframe's popover shows it.
+ * --------------------------------------------------------------------- */
+const CANDS = {
+  fl10: [
+    { code: "36754",     desc: "10 150 SCH/40S STD RFWN FLANGE 316SS IMPORT",          match: 100, inv: 714, mba: "Yes" },
+    { code: "36754A",    desc: "10 150 SCH/40S STD RFWN FLANGE 316SS APPROVED IMPORT", match: 97,  inv: 604, mba: "Yes" },
+    { code: "36716",     desc: "10 150 SCH/10S RFWN FLANGE 316SS IMPORT",              match: 95,  inv: 45,  mba: "No"  },
+    { code: "0-51570-6", desc: "10 150 SCH/20 RFWN 316SS",                             match: 91,  inv: 74,  mba: "No"  },
+    { code: "36754D",    desc: "10 150 SCH/40S STD RFWN FLANGE 316SS DOMESTIC",        match: 89,  inv: 8,   mba: "Yes" },
+  ],
+  fl10w: [
+    { code: "36754B",    desc: "10 150 SCH/40S STD WIDE FLANGE 316SS IMPORT",  match: 88, inv: 500, mba: "Yes" },
+    { code: "36754",     desc: "10 150 SCH/40S STD RFWN FLANGE 316SS IMPORT",  match: 81, inv: 714, mba: "Yes" },
+    { code: "36758W",    desc: "10 300 SCH/40S WIDE RFWN FLANGE 316SS IMPORT", match: 74, inv: 32,  mba: "No"  },
+    { code: "36716",     desc: "10 150 SCH/10S RFWN FLANGE 316SS IMPORT",      match: 68, inv: 45,  mba: "No"  },
+    { code: "0-51570-6", desc: "10 150 SCH/20 RFWN 316SS",                     match: 61, inv: 74,  mba: "No"  },
+  ],
+  fl8: [
+    { code: "36752",  desc: "8 150 SCH/40S STD RFWN FLANGE 316SS IMPORT",          match: 98, inv: 318, mba: "Yes" },
+    { code: "36752A", desc: "8 150 SCH/40S STD RFWN FLANGE 316SS APPROVED IMPORT", match: 94, inv: 120, mba: "Yes" },
+    { code: "36714",  desc: "8 150 SCH/10S RFWN FLANGE 316SS IMPORT",              match: 87, inv: 66,  mba: "No"  },
+    { code: "36752D", desc: "8 150 SCH/40S STD RFWN FLANGE 316SS DOMESTIC",        match: 84, inv: 14,  mba: "Yes" },
+  ],
+  pipe8: [
+    { code: "30820",  desc: "8 SCH/40S SMLS PIPE 316SS A312 20FT RL",   match: 96, inv: 1240, mba: "Yes" },
+    { code: "30820W", desc: "8 SCH/40S WELDED PIPE 316SS A312 20FT RL", match: 90, inv: 880,  mba: "Yes" },
+    { code: "30818",  desc: "8 SCH/10S SMLS PIPE 316SS A312 20FT RL",   match: 82, inv: 410,  mba: "No"  },
+    { code: "30822",  desc: "8 SCH/80S SMLS PIPE 316SS A312 20FT RL",   match: 78, inv: 95,   mba: "No"  },
+  ],
+  el45: [
+    { code: "37145",  desc: "8 SCH/40S 45 DEG LR ELBOW 316SS BW IMPORT",   match: 93, inv: 62,  mba: "Yes" },
+    { code: "37145D", desc: "8 SCH/40S 45 DEG LR ELBOW 316SS BW DOMESTIC", match: 88, inv: 9,   mba: "Yes" },
+    { code: "37143",  desc: "8 SCH/10S 45 DEG LR ELBOW 316SS BW IMPORT",   match: 80, inv: 37,  mba: "No"  },
+    { code: "37155",  desc: "8 SCH/40S 90 DEG LR ELBOW 316SS BW IMPORT",   match: 64, inv: 148, mba: "Yes" },
+  ],
+  el90: [
+    { code: "37132",  desc: "6 SCH/40S 90 DEG LR ELBOW 316SS BW IMPORT",   match: 95, inv: 154, mba: "Yes" },
+    { code: "37132D", desc: "6 SCH/40S 90 DEG LR ELBOW 316SS BW DOMESTIC", match: 89, inv: 21,  mba: "Yes" },
+    { code: "37130",  desc: "6 SCH/10S 90 DEG LR ELBOW 316SS BW IMPORT",   match: 81, inv: 88,  mba: "No"  },
+    { code: "37134",  desc: "6 SCH/40S 45 DEG LR ELBOW 316SS BW IMPORT",   match: 66, inv: 73,  mba: "Yes" },
+  ],
+  tee8: [
+    { code: "37208",  desc: "8 SCH/40S STRAIGHT TEE 316SS BW IMPORT",       match: 79, inv: 41, mba: "Yes" },
+    { code: "37208D", desc: "8 SCH/40S STRAIGHT TEE 316SS BW DOMESTIC",     match: 74, inv: 6,  mba: "Yes" },
+    { code: "37206",  desc: "8 SCH/10S STRAIGHT TEE 316SS BW IMPORT",       match: 70, inv: 22, mba: "No"  },
+    { code: "37210",  desc: "8 X 6 SCH/40S REDUCING TEE 316SS BW IMPORT",   match: 58, inv: 11, mba: "No"  },
+  ],
+  red8x4: [
+    { code: "37412", desc: "8 X 4 SCH/40S CONC REDUCER 316SS BW IMPORT", match: 74, inv: 26, mba: "No" },
+    { code: "37416", desc: "8 X 4 SCH/40S ECC REDUCER 316SS BW IMPORT",  match: 71, inv: 18, mba: "No" },
+    { code: "37414", desc: "8 X 4 SCH/10S CONC REDUCER 316SS BW IMPORT", match: 63, inv: 31, mba: "No" },
+    { code: "37418", desc: "8 X 6 SCH/40S CONC REDUCER 316SS BW IMPORT", match: 49, inv: 44, mba: "No" },
+  ],
+  bfly10: [
+    { code: "41330",  desc: "10 LUG BFLY DI BODY SS STEM SS DISC EPDM SEAT GEAR OP",  match: 81, inv: 12, mba: "No" },
+    { code: "41330V", desc: "10 LUG BFLY DI BODY SS STEM SS DISC BUNA SEAT GEAR OP",  match: 76, inv: 5,  mba: "No" },
+    { code: "41332",  desc: "10 LUG BFLY DI BODY SS STEM SS DISC EPDM SEAT LEVER OP", match: 69, inv: 21, mba: "No" },
+    { code: "41340",  desc: "10 WAFER BFLY DI BODY SS DISC EPDM SEAT GEAR OP",        match: 58, inv: 8,  mba: "No" },
+  ],
+  bfly8hp: [
+    { code: "41528", desc: "8 LUG HP BFLY SS BODY SS DISC RPTFE SEAT GEAR OP", match: 41, inv: 0,  mba: "No" },
+    { code: "41530", desc: "8 LUG HP BFLY CS BODY SS DISC RPTFE SEAT GEAR OP", match: 36, inv: 0,  mba: "No" },
+    { code: "41338", desc: "8 LUG BFLY DI BODY SS DISC EPDM SEAT GEAR OP",     match: 29, inv: 17, mba: "No" },
+  ],
+  chk8: [
+    { code: "43120", desc: "8 150 SPLIT DISC WAFER CHECK SS BODY VITON SEAT", match: 38, inv: 0, mba: "No" },
+    { code: "43118", desc: "8 150 SWING CHECK CS BODY SS DISC",               match: 31, inv: 4, mba: "No" },
+    { code: "43122", desc: "8 150 DUO CHECK SS BODY EPDM SEAT",               match: 27, inv: 2, mba: "No" },
+  ],
+  ball2: [
+    { code: "44870", desc: "2 3000 FNPT FP BALL VALVE 316SS LO SPRING RETURN NACE",       match: 62, inv: 88, mba: "Yes" },
+    { code: "44868", desc: "2 2000 FNPT FP BALL VALVE 316SS LEVER OP NACE",               match: 55, inv: 14, mba: "No"  },
+    { code: "44872", desc: "2 3000 FNPT RP BALL VALVE 316SS LO SPRING RETURN NACE",       match: 48, inv: 7,  mba: "No"  },
+    { code: "44866", desc: "1-1/2 3000 FNPT FP BALL VALVE 316SS LO SPRING RETURN NACE",   match: 41, inv: 11, mba: "No"  },
+  ],
+  ballhalf: [
+    { code: "44810", desc: "1/2 3000 FNPT FP BALL VALVE 316SS NACE", match: 93, inv: 210, mba: "Yes" },
+    { code: "44808", desc: "1/2 2000 FNPT FP BALL VALVE 316SS",      match: 86, inv: 340, mba: "Yes" },
+    { code: "44812", desc: "1/2 3000 FNPT RP BALL VALVE 316SS NACE", match: 78, inv: 66,  mba: "No"  },
+    { code: "44814", desc: "1/2 3000 SW FP BALL VALVE 316SS NACE",   match: 70, inv: 24,  mba: "No"  },
+  ],
+  bleed10: [
+    { code: "38644", desc: "10 150 BLEED RING 316SS 2 X 1/2 FNPT TAPS", match: 44, inv: 6, mba: "No" },
+    { code: "38642", desc: "10 150 BLEED RING 316SS 1 X 1/2 FNPT TAP",  match: 35, inv: 2, mba: "No" },
+    { code: "38646", desc: "10 300 BLEED RING 316SS 2 X 1/2 FNPT TAPS", match: 28, inv: 0, mba: "No" },
+  ],
+  cgi10: [
+    { code: "35915", desc: "10 150 CGI FLEX GASKET 316SS INNER RING AND WINDING W/GRAPHITE FILLER", match: 33, inv: 0,  mba: "No" },
+    { code: "35910", desc: "10 150 CGI GASKET 316SS OUTER RING GRAPHITE",                           match: 27, inv: 0,  mba: "No" },
+    { code: "36716", desc: "10 150 SCH/10S RFWN FLANGE 316SS IMPORT",                               match: 19, inv: 45, mba: "No" },
+  ],
+  gk10: [
+    { code: "35915",  desc: "10 150 CGI FLEX GASKET 316SS INNER RING AND WINDING W/GRAPHITE FILLER", match: 67, inv: 0, mba: "No" },
+    { code: "35915D", desc: "10 150 CGI FLEX GASKET 316SS DOMESTIC W/GRAPHITE FILLER",               match: 59, inv: 0, mba: "No" },
+    { code: "35910",  desc: "10 150 CGI GASKET 316SS OUTER RING GRAPHITE",                           match: 52, inv: 0, mba: "No" },
+    { code: "35917",  desc: "10 300 CGI FLEX GASKET 316SS INNER RING W/GRAPHITE FILLER",             match: 44, inv: 0, mba: "No" },
+  ],
+  cgi14: [
+    { code: "35919", desc: "14 150 CGI FLEX GASKET 316SS INNER RING W/GRAPHITE FILLER", match: 31, inv: 0,  mba: "No" },
+    { code: "35921", desc: "14 300 CGI FLEX GASKET 316SS INNER RING W/GRAPHITE FILLER", match: 24, inv: 0,  mba: "No" },
+    { code: "36720", desc: "14 150 SCH/10S RFWN FLANGE 316SS IMPORT",                   match: 17, inv: 12, mba: "No" },
+  ],
+  blind8: [
+    { code: "36190",  desc: "8 150 RF BLIND FLANGE A105 CS DOMESTIC",        match: 79, inv: 47,  mba: "Yes" },
+    { code: "36190I", desc: "8 150 RF BLIND FLANGE A105 CS IMPORT",          match: 72, inv: 130, mba: "No"  },
+    { code: "36192",  desc: "8 300 RF BLIND FLANGE A105 CS DOMESTIC",        match: 61, inv: 18,  mba: "No"  },
+    { code: "36752",  desc: "8 150 SCH/40S STD RFWN FLANGE 316SS IMPORT",    match: 48, inv: 318, mba: "Yes" },
+  ],
+  spiral3: [
+    { code: "35902", desc: "3 150 SPIRAL WOUND GASKET 316SS/GRAPHITE CS RING", match: 98, inv: 340, mba: "Yes" },
+    { code: "35904", desc: "3 300 SPIRAL WOUND GASKET 316SS/GRAPHITE CS RING", match: 84, inv: 96,  mba: "No"  },
+    { code: "35900", desc: "3 150 SPIRAL WOUND GASKET 304SS/GRAPHITE CS RING", match: 77, inv: 58,  mba: "No"  },
+  ],
+};
+
+/* ------------------------------ code book ------------------------------
+ * What the matcher "knows". Keyed on the raw pasted description.
+ * --------------------------------------------------------------------- */
+const CODEBOOK = [
+  { raw: '8" to 4" stainless reducer',
+    status: "Review", code: "37412", rk: "8 X 4 SCH/40S CONC REDUCER 316SS BW IMPORT",
+    inv: 26, mba: "No", source: "AI", conf: 74, fam: "red8x4" },
+
+  { raw: `20' 8" sch 40 stainless pipe`,
+    status: "Auto", code: "30820", rk: "8 SCH/40S SMLS PIPE 316SS A312 20FT RL",
+    inv: 1240, mba: "Yes", source: "AI", conf: 96, fam: "pipe8" },
+
+  { raw: '8" 150# SS Weld Neck Flange',
+    status: "Auto", code: "36752", rk: "8 150 SCH/40S STD RFWN FLANGE 316SS IMPORT",
+    inv: 318, mba: "Yes", source: "AI", conf: 94, fam: "fl8" },
+
+  { raw: '8" schedule 40 stainless weld neck 45 degree elbow',
+    status: "Auto", code: "37145", rk: "8 SCH/40S 45 DEG LR ELBOW 316SS BW IMPORT",
+    inv: 62, mba: "Yes", source: "AI", conf: 91, fam: "el45" },
+
+  { raw: '8" schedule 40 stianless weld neck tee',
+    status: "Review", code: "37208", rk: "8 SCH/40S STRAIGHT TEE 316SS BW IMPORT",
+    inv: 41, mba: "Yes", source: "AI", conf: 78, fam: "tee8" },
+
+  { raw: '10" - Lug, DI Body, SS Stem, SS Disc, Resilient Seat, Gear',
+    status: "Review", code: "41330", rk: "10 LUG BFLY DI BODY SS STEM SS DISC EPDM SEAT GEAR OP",
+    inv: 12, mba: "No", source: "AI", conf: 81, fam: "bfly10" },
+
+  { raw: '8" - Lug, SS Body, SS Stem, SS Disc, High Performance, Gear',
+    status: "RFQ", code: "RFQ", rk: "",
+    inv: null, mba: null, source: "AI", conf: 5, fam: "bfly8hp" },
+
+  { raw: '8" - SS Body and Disc, Viton Seat, Split Disc Swing',
+    status: "RFQ", code: "RFQ", rk: "",
+    inv: null, mba: null, source: "AI", conf: 5, fam: "chk8" },
+
+  { raw: "Ball, 200 psi, FNPT, FP, SS Body, LO Spring Return Handle, NACE",
+    status: "Manual", code: "44870", rk: "2 3000 FNPT FP BALL VALVE 316SS LO SPRING RETURN NACE",
+    inv: null, mba: null, source: "Manual", conf: 5, fam: "ball2" },
+
+  { raw: "Bleed Ring w/ 2 x 1/2 in NPT taps",
+    status: "RFQ", code: "RFQ", rk: "",
+    inv: null, mba: null, source: "AI", conf: 5, fam: "bleed10" },
+
+  /* --- the four rows shown in the wireframe's results table --- */
+  { raw: '10" 150# SS Weld Neck Flange',
+    status: "Auto", code: "36754", rk: "10 150 SCH/40S STD RFWN FLANGE 316SS IMPORT",
+    inv: 700, mba: "Yes", source: "AI", conf: 92, fam: "fl10" },
+
+  { raw: '10" 150# SS Wide Flange',
+    status: "Review", code: "36754B", rk: "10 150 SCH/40S STD WIDE FLANGE 316SS IMPORT",
+    inv: 500, mba: "No", source: "AI", conf: 85, fam: "fl10w" },
+
+  { raw: '10" CGI',
+    status: "RFQ", code: "RFQ", rk: "",
+    inv: null, mba: null, source: "AI", conf: 5, fam: "cgi10" },
+
+  { raw: '10" 150 CGI Gasket',
+    status: "Manual", code: "35915", rk: "10 150 CGI FLEX GASKET 316SS INNER RING AND WINDING W/GRAPHITE FILLER",
+    inv: null, mba: null, source: "Manual", conf: 5, fam: "gk10" },
+];
+
+const ST = ["Auto", "Manual", "Review", "RFQ"];
+const norm = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+const BOOK = new Map(CODEBOOK.map(e => [norm(e.raw), e]));
+
+let pcRows = [];
+let pcFilter = new Set();
+let adFilter = new Set();
+let adSel = new Set();   // ids of admin lines ticked for batch approve/reject
+let popCtx = null;
+
+/* ------------------------------ matching ------------------------------ */
+function parseLine(line) {
+  const m = line.match(/^(\d+)\s+(.+)$/);        // "2    8" 150# SS Weld Neck Flange"
+  return m ? { qty: Number(m[1]), desc: m[2].trim() }
+           : { qty: 1, desc: line.trim() };      // no leading qty — default to 1
+}
+
+/** Token-overlap fallback so hand-typed lines still resolve to something. */
+function fallbackMatch(desc) {
+  const want = new Set(norm(desc).split(" ").filter(w => w.length > 2));
+  let best = null, bestScore = 0;
+  for (const e of CODEBOOK) {
+    const have = new Set(norm(e.raw).split(" ").filter(w => w.length > 2));
+    let score = 0;
+    want.forEach(w => { if (have.has(w)) score++; });
+    if (score > bestScore) { bestScore = score; best = e; }
+  }
+  if (best && bestScore >= 2 && best.status !== "RFQ") {
+    return { ...best, status: "Review", source: "AI",
+             conf: Math.max(55, (best.conf || 80) - 14) };
+  }
+  return { status: "RFQ", code: "RFQ", rk: "", inv: null, mba: null,
+           source: "AI", conf: 5, fam: "cgi10" };
+}
+
+function buildRow(line, mark) {
+  const { qty, desc } = parseLine(line);
+  const hit = BOOK.get(norm(desc)) || fallbackMatch(desc);
+  return {
+    id: "pc" + mark, mark, qty, cdesc: desc,
+    status: hit.status, code: hit.code, rk: hit.rk, inv: hit.inv,
+    mba: hit.mba, source: hit.source, conf: hit.conf, fam: hit.fam, reason: "",
+  };
+}
+
+/* --------------------------- shared cell bits --------------------------- */
+const stPill  = (s) => `<span class="st ${s.toLowerCase()}">${s}</span>`;
+const mbaCell = (v) => (v === "Yes" || v === "No")
+  ? `<span class="mba ${v.toLowerCase()}">${v}</span>` : '<span class="dash">–</span>';
+const invCell = (v) => (v === null || v === undefined || v === "")
+  ? '<span class="dash">–</span>' : `<span class="num">${v}</span>`;
+const codeCell = (r) => `<span class="code">${esc(r.status === "RFQ" ? "RFQ" : r.code)}</span>`;
+const rkCell = (r) => r.status === "RFQ"
+  ? '<span class="rkph">Insert RFQ description</span>' : esc(r.rk);
+const infoCell = (screen) =>
+  `<button class="infobtn" data-reason="${screen}" aria-label="Show match reason and candidates">
+     <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4">
+       <path d="M2.5 3.2A1.2 1.2 0 0 1 3.7 2h8.6a1.2 1.2 0 0 1 1.2 1.2v6.3a1.2 1.2 0 0 1-1.2 1.2H6.9L4.2 13.4V10.7H3.7a1.2 1.2 0 0 1-1.2-1.2z" stroke-linejoin="round"/>
+       <path d="M8 4.8v.15M8 6.6v2.1" stroke-linecap="round"/>
+     </svg>
+   </button>`;
+
+function pillRow(scopeSel, rows, filter) {
+  const counts = {};
+  ST.forEach(s => counts[s] = rows.filter(r => r.status === s).length);
+  document.querySelectorAll(scopeSel + " .cnt").forEach(b => {
+    const s = b.dataset.st;
+    b.textContent = s + " " + counts[s];
+    b.setAttribute("aria-pressed", filter.has(s));
+    b.classList.toggle("dim", counts[s] === 0 && !filter.has(s));
+  });
+}
+
+/* ========================= PART CODING RENDER ========================= */
+function pasteLineCount() {
+  return $("#pcPaste").value.split(/\r?\n/).filter(l => l.trim()).length;
+}
+
+function renderPC() {
+  pillRow("#view-partcoding", pcRows, pcFilter);
+  $("#pcTotal").textContent = "Total: " + pcRows.length;
+
+  const rows = pcFilter.size ? pcRows.filter(r => pcFilter.has(r.status)) : pcRows;
+  $("#pcShowing").textContent = !pcRows.length ? ""
+    : rows.length === pcRows.length ? `${pcRows.length} lines`
+    : `showing ${rows.length} of ${pcRows.length}`;
+
+  const tb = $("#pcBody");
+  if (!pcRows.length) {
+    const n = pasteLineCount();
+    tb.innerHTML = `<tr class="empty"><td colspan="11">
+      ${n} line${n === 1 ? "" : "s"} ready above — choose <strong>Code It</strong>
+      to match them against the RK item master.</td></tr>`;
+    return;
+  }
+  if (!rows.length) {
+    tb.innerHTML = `<tr class="empty"><td colspan="11">
+      No lines with that status. <button class="ctl ghost" data-clear="pc">Clear filters</button>
+      </td></tr>`;
+    return;
+  }
+
+  tb.innerHTML = rows.map(r => `
+    <tr data-row="${r.id}">
+      <td class="num">${r.mark}</td>
+      <td>${stPill(r.status)}</td>
+      <td class="num">${r.qty}</td>
+      <td class="cust">${esc(r.cdesc)}</td>
+      <td>${codeCell(r)}</td>
+      <td>${rkCell(r)}</td>
+      <td class="right">${invCell(r.inv)}</td>
+      <td>${mbaCell(r.mba)}</td>
+      <td>${esc(r.source)}</td>
+      <td class="num right">${r.conf}%</td>
+      <td>${infoCell("pc")}</td>
+    </tr>`).join("");
+}
+
+/* --------------------------- part coding actions --------------------------- */
+function codeIt() {
+  const lines = $("#pcPaste").value.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  if (!lines.length) { toast("Nothing to code — paste customer lines first."); return; }
+
+  $("#pcProc").hidden = false;
+  $("#pcCode").disabled = true;
+  setTimeout(() => {
+    pcRows = lines.map((l, i) => buildRow(l, i + 1));
+    pcFilter.clear();
+    $("#pcProc").hidden = true;
+    $("#pcCode").disabled = false;
+    renderPC();
+    const auto = pcRows.filter(r => r.status === "Auto").length;
+    const rfq  = pcRows.filter(r => r.status === "RFQ").length;
+    toast(`Coded ${pcRows.length} lines — ${auto} auto, ${rfq} to RFQ`);
+  }, 850);
+}
+
+$("#pcCode").addEventListener("click", codeIt);
+
+$("#pcUpload").addEventListener("click", () => $("#pcFile").click());
+$("#pcFile").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    $("#pcPaste").value = String(reader.result).replace(/\r\n/g, "\n").trim();
+    pcRows = [];
+    pcFilter.clear();
+    renderPC();
+    toast(`Loaded ${pasteLineCount()} lines from ${file.name}`);
+  };
+  reader.readAsText(file);
+  e.target.value = "";
+});
+
+$("#pcExport").addEventListener("click", () => {
+  if (!pcRows.length) { toast("Nothing to export — code the lines first."); return; }
+  const rows = pcFilter.size ? pcRows.filter(r => pcFilter.has(r.status)) : pcRows;
+  const q = (v) => {
+    const s = String(v ?? "");
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+  const head = ["Mark", "Status", "Quantity", "Customer Description", "Part Code",
+                "RK Description", "RK Inv", "MBA", "Source", "Conf", "Reason"];
+  const body = rows.map(r => [r.mark, r.status, r.qty, r.cdesc,
+    r.status === "RFQ" ? "RFQ" : r.code, r.rk, r.inv ?? "", r.mba ?? "",
+    r.source, r.conf + "%", r.reason].map(q).join(","));
+  const blob = new Blob([[head.map(q).join(","), ...body].join("\r\n")],
+                        { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "part_coding_" + new Date().toISOString().slice(0, 10) + ".csv";
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast(`Exported ${rows.length} coded line${rows.length === 1 ? "" : "s"} to CSV`);
+});
+
+$("#pcPaste").addEventListener("input", () => { if (!pcRows.length) renderPC(); });
+
+document.querySelectorAll("#view-partcoding .cnt").forEach(b =>
+  b.addEventListener("click", () => {
+    const s = b.dataset.st;
+    pcFilter.has(s) ? pcFilter.delete(s) : pcFilter.add(s);
+    renderPC();
+  }));
+
+/* ====================== PART CODING ADMIN dataset ====================== */
+let adRows = [
+  { cust: "Diamondback Energy", mark: 1, qty: 2, cdesc: '10" 150# SS Weld Neck Flange',
+    status: "Auto", code: "36754", rk: "10 150 SCH/40S STD RFWN FLANGE 316SS IMPORT",
+    inv: 700, mba: "Yes", source: "AI", conf: 92, fam: "fl10" },
+  { cust: "Diamondback Energy", mark: 2, qty: 1, cdesc: '10" 150# SS Wide Flange',
+    status: "Review", code: "36754B", rk: "10 150 SCH/40S STD WIDE FLANGE 316SS IMPORT",
+    inv: 500, mba: "No", source: "AI", conf: 85, fam: "fl10w" },
+  { cust: "Diamondback Energy", mark: 3, qty: 1, cdesc: '10" CGI',
+    status: "RFQ", code: "RFQ", rk: "", inv: null, mba: null,
+    source: "AI", conf: 5, fam: "cgi10" },
+  { cust: "Diamondback Energy", mark: 4, qty: 1, cdesc: '10" 150 CGI Gasket',
+    status: "Manual", code: "35915",
+    rk: "10 150 CGI FLEX GASKET 316SS INNER RING AND WINDING W/GRAPHITE FILLER",
+    inv: null, mba: null, source: "Manual", conf: 5, fam: "gk10" },
+  { cust: "Diamondback Energy", mark: 5, qty: 4, cdesc: '2" 3000# FNPT ball valve SS NACE',
+    status: "Coded", code: "44870", rk: "2 3000 FNPT FP BALL VALVE 316SS LO SPRING RETURN NACE",
+    inv: 88, mba: "Yes", source: "AI", conf: 97, fam: "ball2" },
+  { cust: "Diamondback Energy", mark: 6, qty: 6, cdesc: '6" sch 40 SS 90 deg LR elbow BW',
+    status: "Auto", code: "37132", rk: "6 SCH/40S 90 DEG LR ELBOW 316SS BW IMPORT",
+    inv: 154, mba: "Yes", source: "AI", conf: 95, fam: "el90" },
+
+  { cust: "XTO Energy", mark: 1, qty: 1, cdesc: '8" 150# RF blind flange CS',
+    status: "Review", code: "36190", rk: "8 150 RF BLIND FLANGE A105 CS DOMESTIC",
+    inv: 47, mba: "Yes", source: "AI", conf: 79, fam: "blind8" },
+  { cust: "XTO Energy", mark: 2, qty: 2, cdesc: '8" HP butterfly lug SS gear op',
+    status: "RFQ", code: "RFQ", rk: "", inv: null, mba: null,
+    source: "AI", conf: 5, fam: "bfly8hp" },
+  { cust: "XTO Energy", mark: 3, qty: 12, cdesc: '1/2" 316 SS NPT full port ball valve',
+    status: "Auto", code: "44810", rk: "1/2 3000 FNPT FP BALL VALVE 316SS NACE",
+    inv: 210, mba: "Yes", source: "AI", conf: 93, fam: "ballhalf" },
+  { cust: "XTO Energy", mark: 4, qty: 2, cdesc: `20' 8" sch 40 SS smls pipe`,
+    status: "Coded", code: "30820", rk: "8 SCH/40S SMLS PIPE 316SS A312 20FT RL",
+    inv: 1240, mba: "Yes", source: "AI", conf: 96, fam: "pipe8" },
+  { cust: "XTO Energy", mark: 5, qty: 1, cdesc: 'Bleed ring 2 x 1/2 NPT taps 10" 150#',
+    status: "Manual", code: "38644", rk: "10 150 BLEED RING 316SS 2 X 1/2 FNPT TAPS",
+    inv: null, mba: null, source: "Manual", conf: 5, fam: "bleed10" },
+  { cust: "XTO Energy", mark: 6, qty: 3, cdesc: '8" to 4" stainless reducer',
+    status: "Review", code: "37412", rk: "8 X 4 SCH/40S CONC REDUCER 316SS BW IMPORT",
+    inv: 26, mba: "No", source: "AI", conf: 74, fam: "red8x4" },
+
+  { cust: "Ovintiv", mark: 1, qty: 2, cdesc: '8" 150# SS weld neck flange',
+    status: "Auto", code: "36752", rk: "8 150 SCH/40S STD RFWN FLANGE 316SS IMPORT",
+    inv: 318, mba: "Yes", source: "AI", conf: 94, fam: "fl8" },
+  { cust: "Ovintiv", mark: 2, qty: 1, cdesc: '8" SS split disc swing check viton seat',
+    status: "RFQ", code: "RFQ", rk: "", inv: null, mba: null,
+    source: "AI", conf: 5, fam: "chk8" },
+  { cust: "Ovintiv", mark: 3, qty: 1, cdesc: '10" lug BFLY DI body resilient seat gear',
+    status: "Review", code: "41330", rk: "10 LUG BFLY DI BODY SS STEM SS DISC EPDM SEAT GEAR OP",
+    inv: 12, mba: "No", source: "AI", conf: 81, fam: "bfly10" },
+  { cust: "Ovintiv", mark: 4, qty: 8, cdesc: '3" 150# RF SS spiral wound gasket',
+    status: "Coded", code: "35902", rk: "3 150 SPIRAL WOUND GASKET 316SS/GRAPHITE CS RING",
+    inv: 340, mba: "Yes", source: "AI", conf: 98, fam: "spiral3" },
+  { cust: "Ovintiv", mark: 5, qty: 1, cdesc: '14" CGI',
+    status: "RFQ", code: "RFQ", rk: "", inv: null, mba: null,
+    source: "AI", conf: 5, fam: "cgi14" },
+  { cust: "Ovintiv", mark: 6, qty: 1, cdesc: '8" sch 40 SS straight tee BW',
+    status: "Coded", code: "37208", rk: "8 SCH/40S STRAIGHT TEE 316SS BW IMPORT",
+    inv: 41, mba: "Yes", source: "AI", conf: 90, fam: "tee8" },
+].map((r, i) => ({ ...r, id: "ad" + (i + 1), approval: null, reason: "" }));
+
+function adBase() {
+  const c = $("#adCustomer").value;
+  return c ? adRows.filter(r => r.cust === c) : adRows;
+}
+
+/** Only lines still awaiting a decision can be batch-selected. */
+const pendingAD = (r) => !r.approval && r.status !== "Coded";
+
+function adVisible() {
+  const base = adBase();
+  return adFilter.size ? base.filter(r => adFilter.has(r.status)) : base;
+}
+
+/** Repaint selection chrome without rebuilding the tbody. */
+function syncSelUI() {
+  const selectable = adVisible().filter(pendingAD);
+  const all = $("#adCheckAll");
+  const chosen = selectable.filter(r => adSel.has(r.id)).length;
+  all.disabled = selectable.length === 0;
+  all.checked = selectable.length > 0 && chosen === selectable.length;
+  all.indeterminate = chosen > 0 && chosen < selectable.length;
+
+  $("#adBulk").hidden = adSel.size === 0;
+  $("#adBulkN").textContent = `${adSel.size} selected`;
+  document.querySelectorAll("#adBody tr[data-row]").forEach(tr =>
+    tr.classList.toggle("selrow", adSel.has(tr.dataset.row)));
+}
+
+function renderAD() {
+  const base = adBase();
+  pillRow("#view-admin", base, adFilter);
+  $("#adTotal").textContent = "Total: " + base.length;
+
+  const rows = adVisible();
+  $("#adShowing").textContent = rows.length === adRows.length
+    ? `${adRows.length} lines across ${new Set(adRows.map(r => r.cust)).size} customers`
+    : `showing ${rows.length} of ${adRows.length}`;
+
+  const tb = $("#adBody");
+  if (!rows.length) {
+    tb.innerHTML = `<tr class="empty"><td colspan="14">
+      Nothing in the queue for these filters.
+      <button class="ctl ghost" data-clear="ad">Clear filters</button></td></tr>`;
+    syncSelUI();
+    return;
+  }
+
+  tb.innerHTML = rows.map(r => {
+    let approval;
+    if (r.approval === "approved")      approval = '<span class="appstate ok">Approved</span>';
+    else if (r.approval === "rejected") approval = '<span class="appstate no">Rejected</span>';
+    else if (r.status === "Coded")      approval = '<span class="appstate" style="color:#9AA1AA">Settled</span>';
+    else approval = `<div class="appwrap">
+        <button class="appbtn ok" data-app="approve" aria-label="Approve line">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.3"/><path d="m5.3 8.2 1.9 1.9 3.5-3.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="appbtn no" data-app="reject" aria-label="Reject line">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.3"/><path d="m5.8 5.8 4.4 4.4M10.2 5.8l-4.4 4.4" stroke-linecap="round"/></svg>
+        </button></div>`;
+    return `
+    <tr data-row="${r.id}" class="${r.approval ? "off" : ""}${adSel.has(r.id) ? " selrow" : ""}">
+      <td class="chk">${pendingAD(r)
+        ? `<input class="cb" type="checkbox" data-sel="${r.id}" ${adSel.has(r.id) ? "checked" : ""}
+                  aria-label="Select ${esc(r.cust)} line ${r.mark}">`
+        : ""}</td>
+      <td class="cust">${esc(r.cust)}</td>
+      <td class="num">${r.mark}</td>
+      <td>${stPill(r.status)}</td>
+      <td class="num">${r.qty}</td>
+      <td class="cust">${esc(r.cdesc)}</td>
+      <td>${codeCell(r)}</td>
+      <td>${rkCell(r)}</td>
+      <td class="right">${invCell(r.inv)}</td>
+      <td>${mbaCell(r.mba)}</td>
+      <td>${esc(r.source)}</td>
+      <td class="num right">${r.conf}%</td>
+      <td>${infoCell("ad")}</td>
+      <td>${approval}</td>
+    </tr>`;
+  }).join("");
+
+  syncSelUI();
+}
+
+$("#adCustomer").addEventListener("change", () => {
+  adFilter.clear(); adSel.clear(); renderAD();
+});
+document.querySelectorAll("#view-admin .cnt").forEach(b =>
+  b.addEventListener("click", () => {
+    const s = b.dataset.st;
+    adFilter.has(s) ? adFilter.delete(s) : adFilter.add(s);
+    adSel.clear();          // selection would otherwise point at hidden rows
+    renderAD();
+  }));
+
+/* ------------------------- batch approve / reject ------------------------- */
+$("#adCheckAll").addEventListener("change", (e) => {
+  const selectable = adVisible().filter(pendingAD);
+  selectable.forEach(r => e.target.checked ? adSel.add(r.id) : adSel.delete(r.id));
+  document.querySelectorAll("#adBody input[data-sel]").forEach(cb =>
+    cb.checked = adSel.has(cb.dataset.sel));
+  syncSelUI();
+});
+
+$("#adBody").addEventListener("change", (e) => {
+  const cb = e.target.closest("input[data-sel]");
+  if (!cb) return;
+  cb.checked ? adSel.add(cb.dataset.sel) : adSel.delete(cb.dataset.sel);
+  syncSelUI();
+});
+
+function batchDecide(decision) {
+  const rows = adRows.filter(r => adSel.has(r.id) && pendingAD(r));
+  if (!rows.length) { toast("Nothing selected."); return; }
+  rows.forEach(r => r.approval = decision);
+  const n = rows.length;
+  const custs = new Set(rows.map(r => r.cust)).size;
+  adSel.clear();
+  closePop();
+  renderAD();
+  toast(`${decision === "approved" ? "Approved" : "Rejected"} ${n} line${n === 1 ? "" : "s"}`
+        + (custs > 1 ? ` across ${custs} customers` : ""));
+}
+$("#adApproveSel").addEventListener("click", () => batchDecide("approved"));
+$("#adRejectSel").addEventListener("click", () => batchDecide("rejected"));
+$("#adClearSel").addEventListener("click", () => { adSel.clear(); renderAD(); });
+
+/* --------------------------- row interactions --------------------------- */
+function rowsFor(screen) { return screen === "pc" ? pcRows : adRows; }
+function rerender(screen) { screen === "pc" ? renderPC() : renderAD(); }
+
+function onTableClick(e, screen) {
+  const clear = e.target.closest("[data-clear]");
+  if (clear) {
+    (screen === "pc" ? pcFilter : adFilter).clear();
+    rerender(screen);
+    return;
+  }
+  const info = e.target.closest("[data-reason]");
+  if (info) { e.stopPropagation(); openPop(info, screen); return; }
+
+  const app = e.target.closest("[data-app]");
+  if (app && screen === "ad") {
+    const id = app.closest("tr").dataset.row;
+    const row = adRows.find(r => r.id === id);
+    if (!row) return;
+    row.approval = app.dataset.app === "approve" ? "approved" : "rejected";
+    adSel.delete(id);
+    closePop();
+    renderAD();
+    toast(`${row.approval === "approved" ? "Approved" : "Rejected"} ${row.cust} line ${row.mark} — ${row.status === "RFQ" ? "RFQ" : row.code}`);
+  }
+}
+$("#pcBody").addEventListener("click", (e) => onTableClick(e, "pc"));
+$("#adBody").addEventListener("click", (e) => onTableClick(e, "ad"));
+
+/* ======================== candidate picker popover ======================== */
+const mpClass = (m) => m >= 90 ? "hi" : m >= 70 ? "mid" : "lo";
+
+function renderCands() {
+  const f = popCtx.filter.trim().toLowerCase();
+  const list = popCtx.cands.filter(c =>
+    !f || (c.code + " " + c.desc).toLowerCase().includes(f));
+  const listEl = $("#popList");
+
+  if (!list.length) {
+    const typed = popCtx.filter.trim().toUpperCase();
+    listEl.innerHTML = typed
+      ? `<button class="cand" data-manual="1" aria-pressed="${popCtx.sel === "__manual"}">
+           <span class="cc"><span class="ccode">${esc(typed)}</span>
+           <span class="cdesc">Not in the candidate list — confirm as a manual code</span></span>
+           <span class="cm"><span class="mp lo">—</span></span><span class="ci">—</span></button>`
+      : `<div class="sub" style="padding:12px 4px">No candidates on file for this line.</div>`;
+  } else {
+    listEl.innerHTML = list.map(c => `
+      <button class="cand" data-code="${esc(c.code)}" aria-pressed="${popCtx.sel === c.code}">
+        <span class="cc"><span class="ccode">${esc(c.code)}</span>
+          <span class="cdesc">${esc(c.desc)}</span></span>
+        <span class="cm"><span class="mp ${mpClass(c.match)}">${c.match}%</span></span>
+        <span class="ci">${c.inv}</span>
+      </button>`).join("");
+  }
+
+  const sel = $("#popSelect");
+  sel.innerHTML = `<option value="">Select Candidate</option>` +
+    list.map(c => `<option value="${esc(c.code)}">${esc(c.code)} — ${esc(c.desc)}</option>`).join("");
+  sel.value = (popCtx.sel && list.some(c => c.code === popCtx.sel)) ? popCtx.sel : "";
+}
+
+function placePop(btn) {
+  const pop = $("#pop");
+  const r = btn.getBoundingClientRect();
+  const w = pop.offsetWidth, h = pop.offsetHeight;
+  let left = r.right - w;
+  left = Math.min(Math.max(12, left), Math.max(12, window.innerWidth - w - 12));
+  let top = r.bottom + 8;
+  if (top + h > window.innerHeight - 12) top = Math.max(12, r.top - h - 8);
+  pop.style.left = left + "px";
+  pop.style.top = top + "px";
+}
+
+function openPop(btn, screen) {
+  const id = btn.closest("tr").dataset.row;
+  const row = rowsFor(screen).find(r => r.id === id);
+  if (!row) return;
+  const cands = CANDS[row.fam] || [];
+  popCtx = { screen, rowId: id, cands, sel: null, filter: "" };
+
+  $("#popSub").textContent = `${cands.length} Candidate${cands.length === 1 ? "" : "s"}`;
+  $("#popSearch").value = "";
+  $("#popReason").value = row.reason || "";
+  renderCands();
+  $("#pop").hidden = false;
+  placePop(btn);
+}
+
+function closePop() {
+  const pop = $("#pop");
+  if (pop) pop.hidden = true;
+  popCtx = null;
+}
+
+$("#popList").addEventListener("click", (e) => {
+  const b = e.target.closest(".cand");
+  if (!b || !popCtx) return;
+  // renderCands() replaces this node, so the click must not reach the
+  // outside-click handler below — a detached target looks "outside".
+  e.stopPropagation();
+  popCtx.sel = b.dataset.manual ? "__manual" : b.dataset.code;
+  renderCands();
+});
+$("#popSelect").addEventListener("change", (e) => {
+  if (!popCtx) return;
+  popCtx.sel = e.target.value || null;
+  renderCands();
+});
+$("#popSearch").addEventListener("input", (e) => {
+  if (!popCtx) return;
+  popCtx.filter = e.target.value;
+  renderCands();
+});
+
+$("#popConfirm").addEventListener("click", () => {
+  if (!popCtx) return;
+  const { screen, rowId, sel } = popCtx;
+  let code, desc, inv, mba, match = null;
+
+  if (sel === "__manual") {
+    code = $("#popSearch").value.trim().toUpperCase();
+    desc = "MANUAL CODE ENTRY — PENDING ITEM MASTER SYNC";
+    inv = null; mba = null;
+  } else {
+    const c = popCtx.cands.find(x => x.code === sel);
+    if (!c) { toast("Pick a candidate first."); return; }
+    code = c.code; desc = c.desc; inv = c.inv; mba = c.mba; match = c.match;
+  }
+  if (!code) { toast("Pick a candidate first."); return; }
+
+  const row = rowsFor(screen).find(r => r.id === rowId);
+  row.code = code;
+  row.rk = desc;
+  row.inv = inv;
+  row.mba = mba;
+  if (match !== null) row.conf = match;
+  row.status = "Auto";       // confirmed — no longer sitting in review
+  row.source = "Manual";     // ...but a person made the call
+  row.reason = $("#popReason").value.trim();
+
+  closePop();
+  rerender(screen);
+  toast(`Updated row — ${code}`);
+});
+
+/* close on outside click / Escape */
+document.addEventListener("click", (e) => {
+  if (!popCtx) return;
+  // composedPath() is captured at dispatch, so it still reports the popover
+  // even if the handler above swapped the clicked node out of the DOM.
+  const inside = (e.composedPath?.() || []).some(n => n.id === "pop")
+                 || (e.target.closest && e.target.closest("#pop"));
+  if (!inside) closePop();
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && popCtx) { e.stopPropagation(); closePop(); }
+});
+window.addEventListener("resize", closePop);
+document.querySelectorAll(".tablewrap").forEach(w =>
+  w.addEventListener("scroll", closePop));
+
+/* ------------------------------- start up ------------------------------- */
+renderPC();
+renderAD();
+showView("partcoding");
+</script>
+</body>
+</html>
