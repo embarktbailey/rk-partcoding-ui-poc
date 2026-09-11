@@ -104,7 +104,7 @@
   .cnt.b{background:#E7EEFA;color:#1E4FA3;}
   .cnt.r{background:#FBE9E9;color:#B32C2C;}
   .cnt.n{background:#F0F1F3;color:#5A6069;}
-  .cnt[aria-pressed="true"]{border-color:currentColor;}
+  .cnt[aria-pressed="true"]{border-color:currentColor;box-shadow:0 0 0 1px currentColor;font-weight:800;}
   .cnt.dim{opacity:.45;}
 
   /* ---------- table ---------- */
@@ -140,6 +140,7 @@
   tbody tr.off td{opacity:.5;}
   .dash{color:#C2C7CD;}
   .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1;}
+  .num.zero{color:var(--red);font-weight:700;}
   .cust{font-weight:500;color:var(--ink);}
   .empty td{padding:40px 10px;text-align:center;color:#8A9099;font-size:13px;}
 
@@ -213,6 +214,9 @@
 
   /* amber pill — new palette variant, follows the g/b/r/n pattern above */
   .cnt.w{background:#FCEBCD;color:#8A5A0B;}
+  /* out-of-stock pill — confident match, zero on-hand; own bucket vs. Manual so the
+     reason isn't buried inside a free-text field */
+  .cnt.o{background:#FCE7D5;color:#9A4A0A;}
   .ctl:disabled{opacity:.55;cursor:default;}
 
   /* ---------- part coding ---------- */
@@ -233,6 +237,7 @@
   .st.rfq{background:#FBC3C3;color:#A82626;}
   .st.manual{background:#CFE0F5;color:#2A5DA8;}
   .st.coded{background:#F0F1F3;color:#5A6069;}
+  .st.oos{background:#FBDCC4;color:#9A4A0A;}
 
   .mba{display:inline-block;font-size:10px;font-weight:700;line-height:1;
        padding:4px 7px;border-radius:999px;}
@@ -285,6 +290,7 @@
   .cc{flex:1;min-width:0;}
   .cm{width:54px;flex:none;text-align:right;}
   .ci{width:42px;flex:none;text-align:right;color:#6B7280;font-size:11px;}
+  .ci.zero{color:var(--red);font-weight:700;}
   .ccode{font-weight:600;color:var(--ink);}
   .cdesc{display:block;color:#6B7280;font-size:10.5px;margin-top:1px;
          overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -392,15 +398,18 @@
 2    10" 150# SS Weld Neck Flange
 1    10" 150# SS Wide Flange
 1    10" CGI
-1    10" 150 CGI Gasket</textarea>
+1    10" 150 CGI Gasket
+1    6" 150# SS Blind Flange</textarea>
     </div>
 
     <div class="summary">
       <span class="total" id="pcTotal">Total: 0</span>
-      <button class="cnt g" data-st="Auto"   aria-pressed="false"></button>
-      <button class="cnt b" data-st="Manual" aria-pressed="false"></button>
-      <button class="cnt w" data-st="Review" aria-pressed="false"></button>
-      <button class="cnt r" data-st="RFQ"    aria-pressed="false"></button>
+      <button class="cnt g" data-st="Auto"         aria-pressed="false"></button>
+      <button class="cnt b" data-st="Manual"       aria-pressed="false"></button>
+      <button class="cnt w" data-st="Review"       aria-pressed="false"></button>
+      <button class="cnt o" data-st="Out of Stock" aria-pressed="false"></button>
+      <button class="cnt r" data-st="RFQ"          aria-pressed="false"></button>
+      <input type="search" class="ctl" id="pcSearch" placeholder="Search lines…" aria-label="Search lines">
       <span class="spacer"></span>
       <span class="proc" id="pcProc" hidden><span class="spin"></span>Matching against item master…</span>
     </div>
@@ -451,10 +460,12 @@
 
     <div class="summary">
       <span class="total" id="adTotal">Total: 0</span>
-      <button class="cnt g" data-st="Auto"   aria-pressed="false"></button>
-      <button class="cnt b" data-st="Manual" aria-pressed="false"></button>
-      <button class="cnt w" data-st="Review" aria-pressed="false"></button>
-      <button class="cnt r" data-st="RFQ"    aria-pressed="false"></button>
+      <button class="cnt g" data-st="Auto"         aria-pressed="false"></button>
+      <button class="cnt b" data-st="Manual"       aria-pressed="false"></button>
+      <button class="cnt w" data-st="Review"       aria-pressed="false"></button>
+      <button class="cnt o" data-st="Out of Stock" aria-pressed="false"></button>
+      <button class="cnt r" data-st="RFQ"          aria-pressed="false"></button>
+      <input type="search" class="ctl" id="adSearch" placeholder="Search lines…" aria-label="Search lines">
       <span class="spacer"></span>
       <span class="bulk" id="adBulk" hidden>
         <span class="bulkn" id="adBulkN">0 selected</span>
@@ -1406,6 +1417,12 @@ const CANDS = {
     { code: "35904", desc: "3 300 SPIRAL WOUND GASKET 316SS/GRAPHITE CS RING", match: 84, inv: 96,  mba: "No"  },
     { code: "35900", desc: "3 150 SPIRAL WOUND GASKET 304SS/GRAPHITE CS RING", match: 77, inv: 58,  mba: "No"  },
   ],
+  /* confident top match, zero on hand — the Out of Stock demo line */
+  blind6: [
+    { code: "36194",  desc: "6 150 RF BLIND FLANGE 316SS IMPORT",   match: 96, inv: 0,  mba: "Yes" },
+    { code: "36194D", desc: "6 150 RF BLIND FLANGE 316SS DOMESTIC", match: 88, inv: 34, mba: "Yes" },
+    { code: "36196",  desc: "6 300 RF BLIND FLANGE 316SS IMPORT",   match: 71, inv: 58, mba: "No"  },
+  ],
 };
 
 /* ------------------------------ code book ------------------------------
@@ -1446,7 +1463,7 @@ const CODEBOOK = [
 
   { raw: "Ball, 200 psi, FNPT, FP, SS Body, LO Spring Return Handle, NACE",
     status: "Manual", code: "44870", rk: "2 3000 FNPT FP BALL VALVE 316SS LO SPRING RETURN NACE",
-    inv: null, mba: null, source: "Manual", conf: 5, fam: "ball2" },
+    inv: null, mba: null, source: "Manual", conf: 62, fam: "ball2" },
 
   { raw: "Bleed Ring w/ 2 x 1/2 in NPT taps",
     status: "RFQ", code: "RFQ", rk: "",
@@ -1467,10 +1484,18 @@ const CODEBOOK = [
 
   { raw: '10" 150 CGI Gasket',
     status: "Manual", code: "35915", rk: "10 150 CGI FLEX GASKET 316SS INNER RING AND WINDING W/GRAPHITE FILLER",
-    inv: null, mba: null, source: "Manual", conf: 5, fam: "gk10" },
+    inv: null, mba: null, source: "Manual", conf: 67, fam: "gk10" },
+
+  /* confident AI match, but the top hit has 0 on hand — flagged Out of Stock
+     instead of Auto so the ISR catches it before it ships short. */
+  { raw: '6" 150# SS Blind Flange',
+    status: "Out of Stock", code: "36194", rk: "6 150 RF BLIND FLANGE 316SS IMPORT",
+    inv: 0, mba: "Yes", source: "AI", conf: 96, fam: "blind6" },
 ];
 
-const ST = ["Auto", "Manual", "Review", "RFQ"];
+const ST = ["Auto", "Manual", "Review", "Out of Stock", "RFQ"];
+/** "Out of Stock" has a space, so it can't just be lowercased into a CSS class. */
+const ST_CLASS = { "Out of Stock": "oos" };
 const norm = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 const BOOK = new Map(CODEBOOK.map(e => [norm(e.raw), e]));
 
@@ -1516,11 +1541,11 @@ function buildRow(line, mark) {
 }
 
 /* --------------------------- shared cell bits --------------------------- */
-const stPill  = (s) => `<span class="st ${s.toLowerCase()}">${s}</span>`;
+const stPill  = (s) => `<span class="st ${ST_CLASS[s] || s.toLowerCase()}">${s}</span>`;
 const mbaCell = (v) => (v === "Yes" || v === "No")
   ? `<span class="mba ${v.toLowerCase()}">${v}</span>` : '<span class="dash">–</span>';
 const invCell = (v) => (v === null || v === undefined || v === "")
-  ? '<span class="dash">–</span>' : `<span class="num">${v}</span>`;
+  ? '<span class="dash">–</span>' : `<span class="num${v === 0 ? " zero" : ""}">${v}</span>`;
 const codeCell = (r) => `<span class="code">${esc(r.status === "RFQ" ? "RFQ" : r.code)}</span>`;
 const rkCell = (r) => r.status === "RFQ"
   ? '<span class="rkph">Insert RFQ description</span>' : esc(r.rk);
@@ -1548,11 +1573,23 @@ function pasteLineCount() {
   return $("#pcPaste").value.split(/\r?\n/).filter(l => l.trim()).length;
 }
 
+/** Free-text filter across the fields a person would actually search on —
+ *  applied before the status pills so pill counts stay meaningful (same
+ *  pattern as the Rule Engine's baseFiltered()). */
+function pcSearchQuery() { return $("#pcSearch").value.trim().toLowerCase(); }
+function pcBase() {
+  const q = pcSearchQuery();
+  if (!q) return pcRows;
+  return pcRows.filter(r => [r.mark, r.cdesc, r.code, r.rk, r.source, r.reason]
+    .join(" ").toLowerCase().includes(q));
+}
+
 function renderPC() {
-  pillRow("#view-partcoding", pcRows, pcFilter);
+  const base = pcBase();
+  pillRow("#view-partcoding", base, pcFilter);
   $("#pcTotal").textContent = "Total: " + pcRows.length;
 
-  const rows = pcFilter.size ? pcRows.filter(r => pcFilter.has(r.status)) : pcRows;
+  const rows = pcFilter.size ? base.filter(r => pcFilter.has(r.status)) : base;
   $("#pcShowing").textContent = !pcRows.length ? ""
     : rows.length === pcRows.length ? `${pcRows.length} lines`
     : `showing ${rows.length} of ${pcRows.length}`;
@@ -1567,7 +1604,7 @@ function renderPC() {
   }
   if (!rows.length) {
     tb.innerHTML = `<tr class="empty"><td colspan="11">
-      No lines with that status. <button class="ctl ghost" data-clear="pc">Clear filters</button>
+      No lines match these filters. <button class="ctl ghost" data-clear="pc">Clear filters</button>
       </td></tr>`;
     return;
   }
@@ -1603,7 +1640,9 @@ function codeIt() {
     renderPC();
     const auto = pcRows.filter(r => r.status === "Auto").length;
     const rfq  = pcRows.filter(r => r.status === "RFQ").length;
-    toast(`Coded ${pcRows.length} lines — ${auto} auto, ${rfq} to RFQ`);
+    const oos  = pcRows.filter(r => r.status === "Out of Stock").length;
+    toast(`Coded ${pcRows.length} lines — ${auto} auto, ${rfq} to RFQ`
+          + (oos ? `, ${oos} out of stock` : ""));
   }, 850);
 }
 
@@ -1627,7 +1666,8 @@ $("#pcFile").addEventListener("change", (e) => {
 
 $("#pcExport").addEventListener("click", () => {
   if (!pcRows.length) { toast("Nothing to export — code the lines first."); return; }
-  const rows = pcFilter.size ? pcRows.filter(r => pcFilter.has(r.status)) : pcRows;
+  const base = pcBase();
+  const rows = pcFilter.size ? base.filter(r => pcFilter.has(r.status)) : base;
   const q = (v) => {
     const s = String(v ?? "");
     return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
@@ -1648,6 +1688,7 @@ $("#pcExport").addEventListener("click", () => {
 });
 
 $("#pcPaste").addEventListener("input", () => { if (!pcRows.length) renderPC(); });
+$("#pcSearch").addEventListener("input", renderPC);
 
 document.querySelectorAll("#view-partcoding .cnt").forEach(b =>
   b.addEventListener("click", () => {
@@ -1670,7 +1711,7 @@ let adRows = [
   { cust: "Diamondback Energy", mark: 4, qty: 1, cdesc: '10" 150 CGI Gasket',
     status: "Manual", code: "35915",
     rk: "10 150 CGI FLEX GASKET 316SS INNER RING AND WINDING W/GRAPHITE FILLER",
-    inv: null, mba: null, source: "Manual", conf: 5, fam: "gk10" },
+    inv: null, mba: null, source: "Manual", conf: 67, fam: "gk10" },
   { cust: "Diamondback Energy", mark: 5, qty: 4, cdesc: '2" 3000# FNPT ball valve SS NACE',
     status: "Coded", code: "44870", rk: "2 3000 FNPT FP BALL VALVE 316SS LO SPRING RETURN NACE",
     inv: 88, mba: "Yes", source: "AI", conf: 97, fam: "ball2" },
@@ -1692,10 +1733,14 @@ let adRows = [
     inv: 1240, mba: "Yes", source: "AI", conf: 96, fam: "pipe8" },
   { cust: "XTO Energy", mark: 5, qty: 1, cdesc: 'Bleed ring 2 x 1/2 NPT taps 10" 150#',
     status: "Manual", code: "38644", rk: "10 150 BLEED RING 316SS 2 X 1/2 FNPT TAPS",
-    inv: null, mba: null, source: "Manual", conf: 5, fam: "bleed10" },
+    inv: null, mba: null, source: "Manual", conf: 44, fam: "bleed10" },
   { cust: "XTO Energy", mark: 6, qty: 3, cdesc: '8" to 4" stainless reducer',
     status: "Review", code: "37412", rk: "8 X 4 SCH/40S CONC REDUCER 316SS BW IMPORT",
     inv: 26, mba: "No", source: "AI", conf: 74, fam: "red8x4" },
+  { cust: "XTO Energy", mark: 7, qty: 1, cdesc: '6" 150# SS Blind Flange',
+    status: "Out of Stock", code: "36194D", rk: "6 150 RF BLIND FLANGE 316SS DOMESTIC",
+    inv: 34, mba: "Yes", source: "Manual", conf: 88, fam: "blind6",
+    reason: "36194 was a 96% match but 0 on hand — swapped to 36194D (34 on hand), confirmed equivalent." },
 
   { cust: "Ovintiv", mark: 1, qty: 2, cdesc: '8" 150# SS weld neck flange',
     status: "Auto", code: "36752", rk: "8 150 SCH/40S STD RFWN FLANGE 316SS IMPORT",
@@ -1715,11 +1760,16 @@ let adRows = [
   { cust: "Ovintiv", mark: 6, qty: 1, cdesc: '8" sch 40 SS straight tee BW',
     status: "Coded", code: "37208", rk: "8 SCH/40S STRAIGHT TEE 316SS BW IMPORT",
     inv: 41, mba: "Yes", source: "AI", conf: 90, fam: "tee8" },
-].map((r, i) => ({ ...r, id: "ad" + (i + 1), approval: null, reason: "" }));
+].map((r, i) => ({ ...r, id: "ad" + (i + 1), approval: null, reason: r.reason || "" }));
 
+function adSearchQuery() { return $("#adSearch").value.trim().toLowerCase(); }
 function adBase() {
   const c = $("#adCustomer").value;
-  return c ? adRows.filter(r => r.cust === c) : adRows;
+  let rows = c ? adRows.filter(r => r.cust === c) : adRows;
+  const q = adSearchQuery();
+  if (q) rows = rows.filter(r => [r.cust, r.mark, r.cdesc, r.code, r.rk, r.source, r.reason]
+    .join(" ").toLowerCase().includes(q));
+  return rows;
 }
 
 /** Only lines still awaiting a decision can be batch-selected. */
@@ -1804,6 +1854,7 @@ function renderAD() {
 $("#adCustomer").addEventListener("change", () => {
   adFilter.clear(); adSel.clear(); renderAD();
 });
+$("#adSearch").addEventListener("input", () => { adSel.clear(); renderAD(); });
 document.querySelectorAll("#view-admin .cnt").forEach(b =>
   b.addEventListener("click", () => {
     const s = b.dataset.st;
@@ -1852,6 +1903,8 @@ function onTableClick(e, screen) {
   const clear = e.target.closest("[data-clear]");
   if (clear) {
     (screen === "pc" ? pcFilter : adFilter).clear();
+    $(screen === "pc" ? "#pcSearch" : "#adSearch").value = "";
+    if (screen === "ad") adSel.clear();
     rerender(screen);
     return;
   }
@@ -1896,7 +1949,7 @@ function renderCands() {
         <span class="cc"><span class="ccode">${esc(c.code)}</span>
           <span class="cdesc">${esc(c.desc)}</span></span>
         <span class="cm"><span class="mp ${mpClass(c.match)}">${c.match}%</span></span>
-        <span class="ci">${c.inv}</span>
+        <span class="ci${c.inv === 0 ? " zero" : ""}">${c.inv}</span>
       </button>`).join("");
   }
 
@@ -1927,7 +1980,7 @@ function openPop(btn, screen) {
 
   $("#popSub").textContent = `${cands.length} Candidate${cands.length === 1 ? "" : "s"}`;
   $("#popSearch").value = "";
-  $("#popReason").value = row.reason || "";
+  $("#popReason").value = row.reason || (row.status === "Out of Stock" ? "Out of stock" : "");
   renderCands();
   $("#pop").hidden = false;
   placePop(btn);
@@ -1976,18 +2029,23 @@ $("#popConfirm").addEventListener("click", () => {
   if (!code) { toast("Pick a candidate first."); return; }
 
   const row = rowsFor(screen).find(r => r.id === rowId);
+  const wasOOS = row.status === "Out of Stock";
   row.code = code;
   row.rk = desc;
   row.inv = inv;
   row.mba = mba;
   if (match !== null) row.conf = match;
-  row.status = "Auto";       // confirmed — no longer sitting in review
-  row.source = "Manual";     // ...but a person made the call
-  row.reason = $("#popReason").value.trim();
+  // A person confirming/overriding a pick is what makes it "Manual" — Auto
+  // only ever comes from the AI itself. Out of Stock stays its own bucket
+  // even after a person picks the replacement — that's the point of the
+  // status vs. folding it into Manual with the reason buried in a text field.
+  row.status = wasOOS ? "Out of Stock" : "Manual";
+  row.source = "Manual";     // a person made the call
+  row.reason = $("#popReason").value.trim() || (wasOOS ? "Out of stock" : "");
 
   closePop();
   rerender(screen);
-  toast(`Updated row — ${code}`);
+  toast(wasOOS ? `Marked Out of Stock — swapped to ${code}` : `Marked Manual — ${code}`);
 });
 
 /* close on outside click / Escape */
