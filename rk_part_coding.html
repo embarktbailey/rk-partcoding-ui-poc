@@ -299,6 +299,11 @@
   .mp.hi{background:#D9F2E4;color:#177A45;}
   .mp.mid{background:#FCEBCD;color:#8A5A0B;}
   .mp.lo{background:#FBC3C3;color:#A82626;}
+  /* Conf column text — same thresholds/inks as .mp above and the Auto/Review/RFQ pills */
+  .conf{font-variant-numeric:tabular-nums;font-weight:600;}
+  .conf.hi{color:#177A45;}
+  .conf.mid{color:#8A5A0B;}
+  .conf.lo{color:#A82626;}
   .popgrid{display:flex;gap:8px;margin-top:11px;}
   .popgrid > *{flex:1;min-width:0;}
   .searchwrap{position:relative;}
@@ -1535,10 +1540,14 @@ function fallbackMatch(desc) {
 function buildRow(line, mark) {
   const { qty, desc } = parseLine(line);
   const hit = BOOK.get(norm(desc)) || fallbackMatch(desc);
+  // 0 on hand is always flagged Out of Stock, independent of match confidence —
+  // the problem is inventory, not match quality, so it overrides Auto/Review alike.
+  const status = hit.inv === 0 ? "Out of Stock" : hit.status;
   return {
     id: "pc" + mark, mark, qty, cdesc: desc,
-    status: hit.status, code: hit.code, rk: hit.rk, inv: hit.inv,
+    status, code: hit.code, rk: hit.rk, inv: hit.inv,
     mba: hit.mba, source: hit.source, conf: hit.conf, fam: hit.fam, reason: "",
+    submitted: false,
   };
 }
 
@@ -1551,6 +1560,11 @@ const invCell = (v) => (v === null || v === undefined || v === "")
 const codeCell = (r) => `<span class="code">${esc(r.status === "RFQ" ? "RFQ" : r.code)}</span>`;
 const rkCell = (r) => r.status === "RFQ"
   ? '<span class="rkph">Insert RFQ description</span>' : esc(r.rk);
+/** Colors the match % the same as the Auto/Review/RFQ thresholds already used
+ *  for candidate match badges in the popover (see mpClass below), so the
+ *  Conf column reads at a glance without adding another pill. */
+const confClass = (v) => v >= 90 ? "hi" : v >= 70 ? "mid" : "lo";
+const confCell = (v) => `<span class="conf ${confClass(v)}">${v}%</span>`;
 const infoCell = (screen) =>
   `<button class="infobtn" data-reason="${screen}" aria-label="Show match reason and candidates">
      <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4">
@@ -1663,7 +1677,7 @@ function renderPC() {
       <td class="right">${invCell(r.inv)}</td>
       <td>${mbaCell(r.mba)}</td>
       <td>${esc(r.source)}</td>
-      <td class="num right">${r.conf}%</td>
+      <td class="right">${confCell(r.conf)}</td>
       <td>${infoCell("pc")}</td>
     </tr>`).join("");
 }
@@ -1727,7 +1741,28 @@ $("#pcExport").addEventListener("click", () => {
   a.download = "part_coding_" + new Date().toISOString().slice(0, 10) + ".csv";
   a.click();
   URL.revokeObjectURL(a.href);
-  toast(`Exported ${rows.length} coded line${rows.length === 1 ? "" : "s"} to CSV`);
+
+  // Export is what moves a line out of Part Coding and into Jeff's queue —
+  // every status goes, not just Auto/Manual; nothing is held back here.
+  // Skip rows already sent so re-exporting the same batch doesn't duplicate
+  // them in Admin.
+  const custLabel = $("#pcCustomer").value.replace(/^Customer:\s*/, "");
+  const toSubmit = rows.filter(r => !r.submitted);
+  toSubmit.forEach(r => {
+    r.submitted = true;
+    adRows.push({
+      id: "ad" + (adAutoId++), cust: custLabel, mark: r.mark, qty: r.qty,
+      cdesc: r.cdesc, status: r.status, code: r.code, rk: r.rk, inv: r.inv,
+      mba: r.mba, source: r.source, conf: r.conf, fam: r.fam,
+      reason: r.reason, approval: null,
+    });
+  });
+  renderAD();
+
+  const skipped = rows.length - toSubmit.length;
+  toast(`Exported ${rows.length} line${rows.length === 1 ? "" : "s"} to CSV — `
+    + `${toSubmit.length} sent to Jeff's queue`
+    + (skipped ? `, ${skipped} already submitted` : ""));
 });
 
 $("#pcPaste").addEventListener("input", () => { if (!pcRows.length) renderPC(); });
@@ -1805,6 +1840,9 @@ let adRows = [
     status: "Coded", code: "37208", rk: "8 SCH/40S STRAIGHT TEE 316SS BW IMPORT",
     inv: 41, mba: "Yes", source: "AI", conf: 90, fam: "tee8" },
 ].map((r, i) => ({ ...r, id: "ad" + (i + 1), approval: null, reason: r.reason || "" }));
+/** Starting point for ids handed to rows submitted from Part Coding via Export,
+ *  kept well clear of the "ad1".."ad19" seed ids above. */
+let adAutoId = 1000;
 
 function adSearchQuery() { return $("#adSearch").value.trim().toLowerCase(); }
 function adBase() {
@@ -1888,7 +1926,7 @@ function renderAD() {
       <td class="right">${invCell(r.inv)}</td>
       <td>${mbaCell(r.mba)}</td>
       <td>${esc(r.source)}</td>
-      <td class="num right">${r.conf}%</td>
+      <td class="right">${confCell(r.conf)}</td>
       <td>${infoCell("ad")}</td>
       <td>${approval}</td>
     </tr>`;
@@ -2077,22 +2115,42 @@ $("#popConfirm").addEventListener("click", () => {
 
   const row = rowsFor(screen).find(r => r.id === rowId);
   const wasOOS = row.status === "Out of Stock";
+  const oldCode = row.code;
   row.code = code;
   row.rk = desc;
   row.inv = inv;
   row.mba = mba;
   if (match !== null) row.conf = match;
-  // A person confirming/overriding a pick is what makes it "Manual" — Auto
-  // only ever comes from the AI itself. Out of Stock stays its own bucket
-  // even after a person picks the replacement — that's the point of the
-  // status vs. folding it into Manual with the reason buried in a text field.
-  row.status = wasOOS ? "Out of Stock" : "Manual";
+  // 0 on hand is Out of Stock no matter who picked it or how confident the
+  // match is — same rule as buildRow(). And once a line has ever been Out of
+  // Stock it stays flagged that way even after being resolved to an in-stock
+  // alternate, so Jeff can filter on "this shipped short at some point" as
+  // its own bucket rather than it disappearing into Manual. Otherwise, a
+  // person confirming/overriding a pick is what makes it "Manual" — Auto
+  // only ever comes from the AI itself.
+  const pickHasNoStock = inv === 0;
+  row.status = (wasOOS || pickHasNoStock) ? "Out of Stock" : "Manual";
   row.source = "Manual";     // a person made the call
-  row.reason = $("#popReason").value.trim() || (wasOOS ? "Out of stock" : "");
+
+  const typed = $("#popReason").value.trim();
+  if (wasOOS && !pickHasNoStock) {
+    // Resolved out of Out of Stock into an in-stock alternate — the status
+    // stays Out of Stock for audit purposes, and the reason always records
+    // what happened, even if the ISR typed nothing or wrote over the
+    // pre-filled default with their own note.
+    const audit = `Out of stock (${oldCode}) — swapped to ${code}.`;
+    row.reason = typed && typed !== "Out of stock" ? `${typed} — ${audit}` : audit;
+  } else if (row.status === "Out of Stock") {
+    row.reason = typed || "Out of stock";
+  } else {
+    row.reason = typed;
+  }
 
   closePop();
   rerender(screen);
-  toast(wasOOS ? `Marked Out of Stock — swapped to ${code}` : `Marked Manual — ${code}`);
+  toast(pickHasNoStock ? `Marked Out of Stock — ${code}`
+    : wasOOS ? `Swapped to ${code} — stays flagged Out of Stock for audit`
+    : `Marked Manual — ${code}`);
 });
 
 /* close on outside click / Escape */

@@ -1,121 +1,122 @@
 # Part Coding status model — working notes
 
-Context for the changes made to `rk_part_coding.html` in this pass, plus open
-questions that need a product decision before the next iteration.
+Context for the changes made to `rk_part_coding.html` across passes, plus
+any open questions still needing a product decision.
 
-## What changed this pass
+## What's been built
 
 1. **Status pill contrast** — the selected state on the summary pills
    (`.cnt[aria-pressed="true"]`) was easy to miss (1px border only). It now
    gets a doubled border/ring effect plus bolder text so the active filter
    is obvious at a glance.
 
-2. **Out of Stock status** — added as its own bucket (`Auto`, `Manual`,
-   `Review`, `Out of Stock`, `RFQ`), rather than overloading `Manual` +
-   a free-text reason. Seeded one example end to end:
-   - Part Coding screen: `6" 150# SS Blind Flange` matches part `36194` at
-     96% confidence, but on-hand is 0 → status `Out of Stock`, inventory
-     shown as **0 in red** so it's impossible to miss.
-   - Opening the candidate picker on that row pre-fills the reason box with
-     "Out of stock" and highlights any zero-inventory candidate in red.
-   - Confirming a swap to an in-stock alternate (e.g. `36194D`) **keeps the
-     status as `Out of Stock`** (does not collapse into `Manual`) — that's
-     the whole point of giving it its own bucket: Jeff can filter/see
-     "these were out of stock and got swapped" without reading every reason
-     field. Source flips to `Manual` since a person made the call; the
-     reason stays editable.
-   - Added a matching resolved example to the Admin queue (XTO Energy,
-     mark 7) so this shows up in Jeff's approval screen already actioned.
+2. **Out of Stock status** — its own bucket (`Auto`, `Manual`, `Review`,
+   `Out of Stock`, `RFQ`), rather than overloading `Manual` + a free-text
+   reason. Any match with 0 on hand is flagged `Out of Stock`, **regardless
+   of match confidence** — a fuzzy/fallback match that would otherwise land
+   in `Review` still flips to `Out of Stock` if the top hit has 0 on hand.
+   Applies both to the initial AI match (`buildRow`) and to a person
+   explicitly picking a 0-stock candidate from the popover.
 
-3. **Fixed a data bug you caught**: rows with `status: "Manual"` had a
-   placeholder `conf: 5` left over from copy/pasting the RFQ shape, which
-   didn't match the actual candidate match score shown in the Reason
-   popover (e.g. `44870` showed 5% in the table but 62% in the popover).
-   Corrected all existing Manual rows to use their real match score
-   (44870 → 62%, 35915 → 67%, 38644 → 44%).
+3. **Out of Stock is sticky, and the reason always records the audit
+   trail.** Once a line has ever been flagged Out of Stock, the status
+   *stays* Out of Stock even after it's resolved to an in-stock alternate —
+   that's the point of giving it its own bucket: Jeff can filter "this
+   shipped short at some point" without it disappearing into `Manual` or
+   the reason being buried in a text field. The Reason field automatically
+   records what happened (`Out of stock (oldCode) — swapped to newCode.`)
+   regardless of whether the ISR typed anything, appending to whatever
+   custom note they wrote rather than overwriting it.
 
-4. **Status transition on confirm**: previously, confirming a candidate in
-   the picker always set the row to `Auto`. That's backwards — `Auto` should
-   mean "the AI was confident enough, no human touched it." Now, confirming
-   a pick sets the status to `Manual` (a person made/overrode the call),
-   except for `Out of Stock` rows, which stay `Out of Stock` per #2 above.
+4. **Fixed a data bug**: rows with `status: "Manual"` had a placeholder
+   `conf: 5` left over from copy/pasting the RFQ shape, which didn't match
+   the actual candidate match score shown in the Reason popover (e.g.
+   `44870` showed 5% in the table but 62% in the popover). Corrected all
+   existing Manual rows to use their real match score (44870 → 62%,
+   35915 → 67%, 38644 → 44%).
 
-5. **Table filtering** — Part Coding and Admin tables only had the status
-   pills to filter by; the Rule Engine screen also has a free-text search
-   box (`fSearch`) that matches across several fields. Added the same
-   pattern: `pcSearch` / `adSearch` inputs, filtering on description, part
-   code, RK description, source, and reason. Pill counts are computed
-   against the search-filtered set first (same order of operations as the
-   Rule Engine's `baseFiltered()`), so counts stay meaningful while typing.
-   CSV export and "Clear filters" now respect/reset the search box too.
+5. **Status transition on confirm**: confirming a candidate in the picker
+   sets the row to `Manual` (a person made/overrode the call) — never
+   `Auto`, which only ever comes from the AI itself with nobody touching
+   it. `Out of Stock` is the one exception (see #3).
 
-6. **Column sorting** — Part Coding and Admin tables now have the same
+6. **Table filtering** — Part Coding and Admin tables now have the same
+   free-text search pattern as the Rule Engine's `fSearch`: `pcSearch` /
+   `adSearch` inputs filtering on description, part code, RK description,
+   source, and reason. Pill counts are computed against the
+   search-filtered set first, so counts stay meaningful while typing. CSV
+   export and "Clear filters" respect/reset the search box too.
+
+7. **Column sorting** — Part Coding and Admin tables have the same
    click-to-sort column headers (with carets) as the Rule Engine table.
-   Click a header to sort ascending, click again to flip to descending;
+   Click a header to sort ascending, click again for descending;
    `Mark`/`Quantity`/`RK Inv`/`Conf` sort numerically (nulls sort lowest),
    everything else sorts as text. `Reason`/`Approval` stay unsorted since
-   they're icon-only columns, same as the Rule Engine's action column.
+   they're icon-only columns.
 
-## Status model, as clarified in this pass
+8. **Confidence % is color-coded** — the Conf column text is now green /
+   amber / red using the same 90%-and-up / 70–89% / under-70% thresholds
+   already used for candidate match badges in the popover (`mpClass`), so
+   match quality reads at a glance without adding another pill. Applies to
+   every row's Conf value, including `Out of Stock` and `Manual` rows —
+   the color reflects match quality, which is a separate concern from the
+   inventory problem the status itself flags.
 
-- **Auto** (green) — AI is confident, no human involved yet.
+9. **Export is what sends a line to Jeff's queue.** Clicking Export on the
+   Part Coding screen now does two things: downloads the CSV (unchanged)
+   *and* pushes the same rows into the Admin queue (`adRows`), tagged with
+   whichever customer is selected in the scope dropdown. Every status goes
+   — Review, RFQ, and Out of Stock included, not just Auto/Manual; nothing
+   is held back waiting for the batch to be "fully reviewed" first, since
+   everything ultimately shows up on Jeff's screen. Re-exporting the same
+   batch doesn't duplicate rows already sent (tracked via a `submitted`
+   flag on each Part Coding row) — the toast reports how many were newly
+   sent vs. already submitted.
+
+## Status model
+
+- **Auto** (green) — AI is confident, no human involved yet. Never a
+  starting point for anything a person has touched.
 - **Review** (amber) — AI has a candidate but confidence is mid-range;
   needs a person to confirm or pick an alternate.
 - **RFQ** (red) — no candidate cleared the bar at all; needs sourcing, not
   just a part-code pick.
-- **Out of Stock** (orange) — AI found a confident match, but the top hit
-  has 0 on hand. Distinct from Review/RFQ because the *problem* isn't match
-  quality, it's inventory — flagged so the ISR catches it before a quote
-  goes out short.
-- **Manual** (blue) — a person has confirmed or overridden a pick. This is
-  never an AI-native starting status; it only exists after a human acts on
-  a Review/RFQ/Auto row via the candidate picker.
+- **Out of Stock** (orange) — the top match has 0 on hand, regardless of
+  how confident that match is. Distinct from Review/RFQ because the
+  *problem* isn't match quality, it's inventory. Sticky once flagged (see
+  #3 above) — confidence thresholds don't apply to it since an Out of
+  Stock line is never "final" as-is; it always gets resolved to something
+  else before it would ship.
+- **Manual** (blue) — a person has confirmed or overridden a pick. Never
+  an AI-native starting status; it only exists after a human acts on a
+  Review/RFQ/Auto row via the candidate picker. Confidence thresholds
+  (90/70) are kept as-is — hand-authored per row in this demo data, not
+  derived from a formal rule yet (see Roadmap below).
 
 Nothing in the matcher (`buildRow`, `fallbackMatch`) assigns `Manual` as a
-starting status anymore in spirit — the two remaining `Manual`-seeded rows
-in `CODEBOOK`/`adRows` are intentionally there to demonstrate "what an
-already-reviewed line looks like," not to imply the AI can emit `Manual`
-on its own.
+starting status — the two remaining `Manual`-seeded rows in
+`CODEBOOK`/`adRows` are intentionally there to demonstrate "what an
+already-reviewed line looks like."
 
 **Reject is terminal, by design.** When Jeff rejects a line on the Admin
 screen, it does not get kicked back to the ISR for another pass — it's a
-record-keeping state. The point is that rejected (and approved) match
-decisions build up a history that the first screen's matcher searches over,
-so the AI gets better with more examples over time rather than looping a
-line back and forth between screens.
+record-keeping state. Rejected (and approved) match decisions build up a
+history that the first screen's matcher searches over, so the AI gets
+better with more examples over time rather than looping a line back and
+forth between screens.
 
-## Open questions / roadmap (not implemented — need a decision first)
+## Known limitations / minor gaps (not blocking, just noted)
 
-1. **Confidence thresholds.** What % cutoffs actually separate Auto /
-   Review / RFQ? Right now every row's status + conf% is hand-authored in
-   the demo data, not derived from a rule (e.g. "≥90 = Auto, 60–89 =
-   Review, <60 = RFQ"). Once real matching is wired up, we need agreed
-   thresholds — and to decide whether they're global or vary by customer
-   scope (the `pcScope` selector — Generic / Customer Specific / Strict —
-   No Substitutes — hints that they might).
-
-2. **Where does "Out of Stock" trigger from?** Today it's only wired for a
-   confident (Auto-level) match with 0 on hand. Should a *Review*-level
-   match that also happens to have 0 inventory get flagged Out of Stock
-   too, or does it just stay Review (since it already needs a human look)?
-
-3. **Does Out of Stock ever fall back to Auto?** If the ISR swaps to an
-   alternate that itself is a 100% match with plenty of stock, should the
-   line ever "graduate" back to Auto, or does Out of Stock permanently mark
-   the line for audit purposes (so Jeff always knows this shipped short on
-   the first pass)? Currently implemented as: always stays Out of Stock
-   once flagged, forever.
-
-4. **"Send to Admin" / mark-as-reviewed action.** There's currently no way
-   on the Part Coding screen to say "this batch is done, send it to Jeff's
-   queue." The Part Coding table (`pcRows`) and the Admin queue (`adRows`)
-   are separate, unconnected datasets in this wireframe. Real questions:
-   - Is submission per-line or per-batch?
-   - Does a batch need every line to be Auto/Manual (i.e., nothing left in
-     Review/RFQ/Out of Stock) before it can be submitted, or can it go
-     partially, with the unresolved lines held back?
-   - Should Admin only ever show Auto/Manual lines (fully resolved), and
-     hide Review/RFQ/Out of Stock until an ISR clears them? That's the
-     behavior implied by "Jeff should only see Auto and Manual once
-     everything's reviewed" — but the current Admin seed data intentionally
-     includes Review/RFQ rows too, so this needs a decision either way.
+- **Submitted rows are a snapshot, not a live link.** Once a Part Coding
+  line has been exported to Admin, editing it further in Part Coding
+  (e.g. picking a different candidate) does not update the already-
+  submitted copy in `adRows` — they're separate objects after the copy.
+  Re-exporting sends the current state as a *new* line rather than
+  updating the old one, since there's no matching/reconciliation logic.
+- **`MBA Scope` isn't one of the Admin customer filter's hardcoded
+  options** (`Customer: All / Diamondback Energy / XTO Energy / Ovintiv`).
+  Lines exported while `pcCustomer` is set to "MBA Scope" still show up
+  fine under "All" and are searchable by text, just not selectable via
+  that dropdown. Making the Admin customer filter populate dynamically
+  from whatever's actually in `adRows` (like the Rule Engine's
+  `renderSelect` pattern) would close this gap if it matters.
