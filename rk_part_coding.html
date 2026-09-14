@@ -423,17 +423,17 @@
           <col style="width:54px"><col style="width:56px">
         </colgroup>
         <thead>
-          <tr>
-            <th><button>Mark</button></th>
-            <th><button>Status</button></th>
-            <th><button>Quantity</button></th>
-            <th><button>Customer Description</button></th>
-            <th><button>Part Code</button></th>
-            <th><button>RK Description</button></th>
-            <th><button>RK Inv</button></th>
-            <th><button>MBA</button></th>
-            <th><button>Source</button></th>
-            <th><button>Conf</button></th>
+          <tr id="pcHeadRow">
+            <th data-key="mark"><button>Mark<span class="caret">▲</span></button></th>
+            <th data-key="status"><button>Status<span class="caret">▲</span></button></th>
+            <th data-key="qty"><button>Quantity<span class="caret">▲</span></button></th>
+            <th data-key="cdesc"><button>Customer Description<span class="caret">▲</span></button></th>
+            <th data-key="code"><button>Part Code<span class="caret">▲</span></button></th>
+            <th data-key="rk"><button>RK Description<span class="caret">▲</span></button></th>
+            <th data-key="inv"><button>RK Inv<span class="caret">▲</span></button></th>
+            <th data-key="mba"><button>MBA<span class="caret">▲</span></button></th>
+            <th data-key="source"><button>Source<span class="caret">▲</span></button></th>
+            <th data-key="conf"><button>Conf<span class="caret">▲</span></button></th>
             <th><button>Reason</button></th>
           </tr>
         </thead>
@@ -486,22 +486,22 @@
           <col style="width:70px">
         </colgroup>
         <thead>
-          <tr>
+          <tr id="adHeadRow">
             <th class="chk">
               <input class="cb" type="checkbox" id="adCheckAll"
                      aria-label="Select all pending lines in view">
             </th>
-            <th><button>Customer</button></th>
-            <th><button>Mark</button></th>
-            <th><button>Status</button></th>
-            <th><button>Quantity</button></th>
-            <th><button>Customer Description</button></th>
-            <th><button>Part Code</button></th>
-            <th><button>RK Description</button></th>
-            <th><button>RK Inv</button></th>
-            <th><button>MBA</button></th>
-            <th><button>Source</button></th>
-            <th><button>Conf</button></th>
+            <th data-key="cust"><button>Customer<span class="caret">▲</span></button></th>
+            <th data-key="mark"><button>Mark<span class="caret">▲</span></button></th>
+            <th data-key="status"><button>Status<span class="caret">▲</span></button></th>
+            <th data-key="qty"><button>Quantity<span class="caret">▲</span></button></th>
+            <th data-key="cdesc"><button>Customer Description<span class="caret">▲</span></button></th>
+            <th data-key="code"><button>Part Code<span class="caret">▲</span></button></th>
+            <th data-key="rk"><button>RK Description<span class="caret">▲</span></button></th>
+            <th data-key="inv"><button>RK Inv<span class="caret">▲</span></button></th>
+            <th data-key="mba"><button>MBA<span class="caret">▲</span></button></th>
+            <th data-key="source"><button>Source<span class="caret">▲</span></button></th>
+            <th data-key="conf"><button>Conf<span class="caret">▲</span></button></th>
             <th><button>Reason</button></th>
             <th><button>Approval</button></th>
           </tr>
@@ -1501,7 +1501,9 @@ const BOOK = new Map(CODEBOOK.map(e => [norm(e.raw), e]));
 
 let pcRows = [];
 let pcFilter = new Set();
+let pcSort = { key: "mark", dir: 1 };
 let adFilter = new Set();
+let adSort = { key: "mark", dir: 1 };
 let adSel = new Set();   // ids of admin lines ticked for batch approve/reject
 let popCtx = null;
 
@@ -1568,6 +1570,45 @@ function pillRow(scopeSel, rows, filter) {
   });
 }
 
+/* ------------------- shared column sorting (PC + Admin) -------------------
+ * Same click-to-sort / caret pattern as the Rule Engine's headRow, applied
+ * to the two other tables now that they have search filtering too. */
+const NUMERIC_KEYS = new Set(["mark", "qty", "inv", "conf"]);
+
+function sortRows(rows, sortState) {
+  const { key, dir } = sortState;
+  if (!key) return rows;
+  return [...rows].sort((a, b) => {
+    let av = a[key], bv = b[key];
+    if (NUMERIC_KEYS.has(key)) {
+      av = (av === null || av === undefined) ? -Infinity : av;
+      bv = (bv === null || bv === undefined) ? -Infinity : bv;
+      return (av - bv) * dir || a.mark - b.mark;
+    }
+    const c = String(av ?? "").localeCompare(String(bv ?? ""), undefined, { numeric: true });
+    return c * dir || a.mark - b.mark;
+  });
+}
+
+function updateSortHeaders(rowSel, sortState) {
+  document.querySelectorAll(`${rowSel} th[data-key]`).forEach(th => {
+    const on = th.dataset.key === sortState.key;
+    th.classList.toggle("sorted", on);
+    th.querySelector(".caret").textContent = on && sortState.dir < 0 ? "▼" : "▲";
+  });
+}
+
+function wireSortHeaders(rowSel, getSort, setSort, rerenderFn) {
+  document.querySelectorAll(`${rowSel} th[data-key]`).forEach(th => {
+    th.querySelector("button").addEventListener("click", () => {
+      const k = th.dataset.key;
+      const cur = getSort();
+      setSort({ key: k, dir: cur.key === k ? -cur.dir : 1 });
+      rerenderFn();
+    });
+  });
+}
+
 /* ========================= PART CODING RENDER ========================= */
 function pasteLineCount() {
   return $("#pcPaste").value.split(/\r?\n/).filter(l => l.trim()).length;
@@ -1589,7 +1630,9 @@ function renderPC() {
   pillRow("#view-partcoding", base, pcFilter);
   $("#pcTotal").textContent = "Total: " + pcRows.length;
 
-  const rows = pcFilter.size ? base.filter(r => pcFilter.has(r.status)) : base;
+  const filtered = pcFilter.size ? base.filter(r => pcFilter.has(r.status)) : base;
+  const rows = sortRows(filtered, pcSort);
+  updateSortHeaders("#pcHeadRow", pcSort);
   $("#pcShowing").textContent = !pcRows.length ? ""
     : rows.length === pcRows.length ? `${pcRows.length} lines`
     : `showing ${rows.length} of ${pcRows.length}`;
@@ -1696,6 +1739,7 @@ document.querySelectorAll("#view-partcoding .cnt").forEach(b =>
     pcFilter.has(s) ? pcFilter.delete(s) : pcFilter.add(s);
     renderPC();
   }));
+wireSortHeaders("#pcHeadRow", () => pcSort, (v) => { pcSort = v; }, renderPC);
 
 /* ====================== PART CODING ADMIN dataset ====================== */
 let adRows = [
@@ -1777,7 +1821,8 @@ const pendingAD = (r) => !r.approval && r.status !== "Coded";
 
 function adVisible() {
   const base = adBase();
-  return adFilter.size ? base.filter(r => adFilter.has(r.status)) : base;
+  const filtered = adFilter.size ? base.filter(r => adFilter.has(r.status)) : base;
+  return sortRows(filtered, adSort);
 }
 
 /** Repaint selection chrome without rebuilding the tbody. */
@@ -1801,6 +1846,7 @@ function renderAD() {
   $("#adTotal").textContent = "Total: " + base.length;
 
   const rows = adVisible();
+  updateSortHeaders("#adHeadRow", adSort);
   $("#adShowing").textContent = rows.length === adRows.length
     ? `${adRows.length} lines across ${new Set(adRows.map(r => r.cust)).size} customers`
     : `showing ${rows.length} of ${adRows.length}`;
@@ -1855,6 +1901,7 @@ $("#adCustomer").addEventListener("change", () => {
   adFilter.clear(); adSel.clear(); renderAD();
 });
 $("#adSearch").addEventListener("input", () => { adSel.clear(); renderAD(); });
+wireSortHeaders("#adHeadRow", () => adSort, (v) => { adSort = v; }, renderAD);
 document.querySelectorAll("#view-admin .cnt").forEach(b =>
   b.addEventListener("click", () => {
     const s = b.dataset.st;

@@ -49,6 +49,13 @@ questions that need a product decision before the next iteration.
    Rule Engine's `baseFiltered()`), so counts stay meaningful while typing.
    CSV export and "Clear filters" now respect/reset the search box too.
 
+6. **Column sorting** — Part Coding and Admin tables now have the same
+   click-to-sort column headers (with carets) as the Rule Engine table.
+   Click a header to sort ascending, click again to flip to descending;
+   `Mark`/`Quantity`/`RK Inv`/`Conf` sort numerically (nulls sort lowest),
+   everything else sorts as text. `Reason`/`Approval` stay unsorted since
+   they're icon-only columns, same as the Rule Engine's action column.
+
 ## Status model, as clarified in this pass
 
 - **Auto** (green) — AI is confident, no human involved yet.
@@ -69,6 +76,13 @@ starting status anymore in spirit — the two remaining `Manual`-seeded rows
 in `CODEBOOK`/`adRows` are intentionally there to demonstrate "what an
 already-reviewed line looks like," not to imply the AI can emit `Manual`
 on its own.
+
+**Reject is terminal, by design.** When Jeff rejects a line on the Admin
+screen, it does not get kicked back to the ISR for another pass — it's a
+record-keeping state. The point is that rejected (and approved) match
+decisions build up a history that the first screen's matcher searches over,
+so the AI gets better with more examples over time rather than looping a
+line back and forth between screens.
 
 ## Open questions / roadmap (not implemented — need a decision first)
 
@@ -105,13 +119,3 @@ on its own.
      behavior implied by "Jeff should only see Auto and Manual once
      everything's reviewed" — but the current Admin seed data intentionally
      includes Review/RFQ rows too, so this needs a decision either way.
-
-5. **Can Jeff kick a line back to the ISR?** Right now Reject is terminal
-   (just flips `approval` to `rejected`). Does rejecting send it back to
-   Part Coding for another pass, or is it just a record-keeping state?
-
-6. **Column sorting.** The Rule Engine table has clickable/sortable column
-   headers (with carets); Part Coding and Admin tables have the same
-   `<button>` header markup but no sort wired up. Worth matching for full
-   parity, but wasn't asked for explicitly this round — flagging in case
-   it's wanted alongside the search filter.
