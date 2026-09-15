@@ -1752,7 +1752,7 @@ $("#pcExport").addEventListener("click", () => {
     $("#exportConfirmMsg").textContent =
       `There ${unconfirmed === 1 ? "is" : "are"} ${unconfirmed} unconfirmed line`
       + `${unconfirmed === 1 ? "" : "s"} still in Review. Exporting will send `
-      + `${unconfirmed === 1 ? "it" : "them"} to Jeff's approval queue as-is. `
+      + `${unconfirmed === 1 ? "it" : "them"} to the approval queue as-is. `
       + `Export anyway?`;
     $("#exportConfirmBackdrop").hidden = false;
     return;

@@ -76,7 +76,7 @@ any open questions still needing a product decision.
 10. **Unconfirmed Review lines get a soft warning before export.** If any
     line in the current export scope is still `Review` status, Export now
     shows a confirm dialog ("There are N unconfirmed lines still in
-    Review. Exporting will send them to Jeff's approval queue as-is.
+    Review. Exporting will send them to the approval queue as-is.
     Export anyway?") before doing anything — Cancel aborts with no CSV
     download and no rows moved. This only checks `Review`; `RFQ` and
     `Out of Stock` aren't gated the same way since they're different kinds
