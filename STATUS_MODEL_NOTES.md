@@ -38,7 +38,12 @@ any open questions still needing a product decision.
 5. **Status transition on confirm**: confirming a candidate in the picker
    sets the row to `Manual` (a person made/overrode the call) — never
    `Auto`, which only ever comes from the AI itself with nobody touching
-   it. `Out of Stock` is the one exception (see #3).
+   it. `Out of Stock` is the one exception (see #3). This also meant fixing
+   two `CODEBOOK` seed entries (44870, 35915) that were hardcoded to
+   `status: "Manual"` — they now start `Review` like any other AI match, so
+   clicking **Code It** never produces a `Manual` row on its own. The two
+   `Manual` rows still seeded in `adRows` are fine as-is — that's the Admin
+   queue's pre-existing history, not live Code It output.
 
 6. **Table filtering** — Part Coding and Admin tables now have the same
    free-text search pattern as the Rule Engine's `fSearch`: `pcSearch` /
@@ -62,16 +67,18 @@ any open questions still needing a product decision.
    the color reflects match quality, which is a separate concern from the
    inventory problem the status itself flags.
 
-9. **Export is what sends a line to Jeff's queue.** Clicking Export on the
-   Part Coding screen now does two things: downloads the CSV (unchanged)
+9. **Export is what moves a line to Jeff's queue — a move, not a copy.**
+   Clicking Export on the Part Coding screen downloads the CSV (unchanged)
    *and* pushes the same rows into the Admin queue (`adRows`), tagged with
    whichever customer is selected in the scope dropdown. Every status goes
    — Review, RFQ, and Out of Stock included, not just Auto/Manual; nothing
    is held back waiting for the batch to be "fully reviewed" first, since
-   everything ultimately shows up on Jeff's screen. Re-exporting the same
-   batch doesn't duplicate rows already sent (tracked via a `submitted`
-   flag on each Part Coding row) — the toast reports how many were newly
-   sent vs. already submitted.
+   everything ultimately shows up on Jeff's screen. The exported rows are
+   then **removed from the Part Coding table** — they only ever exist in
+   one place at a time, so there's no double-counting and no way to
+   re-export the same line twice. Export respects whatever's currently
+   filtered/searched, so exporting a subset leaves the rest in Part Coding
+   for further work.
 
 ## Status model
 
@@ -93,10 +100,11 @@ any open questions still needing a product decision.
   (90/70) are kept as-is — hand-authored per row in this demo data, not
   derived from a formal rule yet (see Roadmap below).
 
-Nothing in the matcher (`buildRow`, `fallbackMatch`) assigns `Manual` as a
-starting status — the two remaining `Manual`-seeded rows in
-`CODEBOOK`/`adRows` are intentionally there to demonstrate "what an
-already-reviewed line looks like."
+Nothing in the matcher (`buildRow`, `fallbackMatch`, or the `CODEBOOK` seed
+data) assigns `Manual` as a starting status — clicking **Code It** only ever
+produces `Auto`, `Review`, `RFQ`, or `Out of Stock`. The two `Manual` rows
+still in `adRows` are the Admin queue's pre-existing history (lines already
+resolved before this session), not something Code It generates.
 
 **Reject is terminal, by design.** When Jeff rejects a line on the Admin
 screen, it does not get kicked back to the ISR for another pass — it's a
@@ -107,12 +115,6 @@ forth between screens.
 
 ## Known limitations / minor gaps (not blocking, just noted)
 
-- **Submitted rows are a snapshot, not a live link.** Once a Part Coding
-  line has been exported to Admin, editing it further in Part Coding
-  (e.g. picking a different candidate) does not update the already-
-  submitted copy in `adRows` — they're separate objects after the copy.
-  Re-exporting sends the current state as a *new* line rather than
-  updating the old one, since there's no matching/reconciliation logic.
 - **`MBA Scope` isn't one of the Admin customer filter's hardcoded
   options** (`Customer: All / Diamondback Energy / XTO Energy / Ovintiv`).
   Lines exported while `pcCustomer` is set to "MBA Scope" still show up

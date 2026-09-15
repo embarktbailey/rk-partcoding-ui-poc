@@ -1467,8 +1467,8 @@ const CODEBOOK = [
     inv: null, mba: null, source: "AI", conf: 5, fam: "chk8" },
 
   { raw: "Ball, 200 psi, FNPT, FP, SS Body, LO Spring Return Handle, NACE",
-    status: "Manual", code: "44870", rk: "2 3000 FNPT FP BALL VALVE 316SS LO SPRING RETURN NACE",
-    inv: null, mba: null, source: "Manual", conf: 62, fam: "ball2" },
+    status: "Review", code: "44870", rk: "2 3000 FNPT FP BALL VALVE 316SS LO SPRING RETURN NACE",
+    inv: null, mba: null, source: "AI", conf: 62, fam: "ball2" },
 
   { raw: "Bleed Ring w/ 2 x 1/2 in NPT taps",
     status: "RFQ", code: "RFQ", rk: "",
@@ -1488,8 +1488,8 @@ const CODEBOOK = [
     inv: null, mba: null, source: "AI", conf: 5, fam: "cgi10" },
 
   { raw: '10" 150 CGI Gasket',
-    status: "Manual", code: "35915", rk: "10 150 CGI FLEX GASKET 316SS INNER RING AND WINDING W/GRAPHITE FILLER",
-    inv: null, mba: null, source: "Manual", conf: 67, fam: "gk10" },
+    status: "Review", code: "35915", rk: "10 150 CGI FLEX GASKET 316SS INNER RING AND WINDING W/GRAPHITE FILLER",
+    inv: null, mba: null, source: "AI", conf: 67, fam: "gk10" },
 
   /* confident AI match, but the top hit has 0 on hand — flagged Out of Stock
      instead of Auto so the ISR catches it before it ships short. */
@@ -1547,7 +1547,6 @@ function buildRow(line, mark) {
     id: "pc" + mark, mark, qty, cdesc: desc,
     status, code: hit.code, rk: hit.rk, inv: hit.inv,
     mba: hit.mba, source: hit.source, conf: hit.conf, fam: hit.fam, reason: "",
-    submitted: false,
   };
 }
 
@@ -1743,13 +1742,10 @@ $("#pcExport").addEventListener("click", () => {
   URL.revokeObjectURL(a.href);
 
   // Export is what moves a line out of Part Coding and into Jeff's queue —
-  // every status goes, not just Auto/Manual; nothing is held back here.
-  // Skip rows already sent so re-exporting the same batch doesn't duplicate
-  // them in Admin.
+  // every status goes, not just Auto/Manual. This is a move, not a copy:
+  // the lines disappear from Part Coding once they've landed in Admin.
   const custLabel = $("#pcCustomer").value.replace(/^Customer:\s*/, "");
-  const toSubmit = rows.filter(r => !r.submitted);
-  toSubmit.forEach(r => {
-    r.submitted = true;
+  rows.forEach(r => {
     adRows.push({
       id: "ad" + (adAutoId++), cust: custLabel, mark: r.mark, qty: r.qty,
       cdesc: r.cdesc, status: r.status, code: r.code, rk: r.rk, inv: r.inv,
@@ -1757,12 +1753,15 @@ $("#pcExport").addEventListener("click", () => {
       reason: r.reason, approval: null,
     });
   });
+  const movedIds = new Set(rows.map(r => r.id));
+  pcRows = pcRows.filter(r => !movedIds.has(r.id));
+  pcFilter.clear();
+  $("#pcSearch").value = "";
+  renderPC();
   renderAD();
 
-  const skipped = rows.length - toSubmit.length;
-  toast(`Exported ${rows.length} line${rows.length === 1 ? "" : "s"} to CSV — `
-    + `${toSubmit.length} sent to Jeff's queue`
-    + (skipped ? `, ${skipped} already submitted` : ""));
+  toast(`Exported ${rows.length} line${rows.length === 1 ? "" : "s"} to CSV `
+    + `and moved to Jeff's queue`);
 });
 
 $("#pcPaste").addEventListener("input", () => { if (!pcRows.length) renderPC(); });
