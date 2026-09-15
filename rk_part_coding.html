@@ -439,7 +439,7 @@
             <th data-key="mba"><button>MBA<span class="caret">▲</span></button></th>
             <th data-key="source"><button>Source<span class="caret">▲</span></button></th>
             <th data-key="conf"><button>Conf<span class="caret">▲</span></button></th>
-            <th><button>Reason</button></th>
+            <th><button>Review</button></th>
           </tr>
         </thead>
         <tbody id="pcBody"></tbody>
@@ -642,6 +642,25 @@
       <button class="ctl btn" id="btnCancel">Cancel</button>
       <span class="spacer"></span>
       <button class="ctl ghost" id="btnDelete" hidden>Delete rule</button>
+    </footer>
+  </div>
+</div>
+
+<!-- ====== EXPORT CONFIRM (unconfirmed Review lines) ====== -->
+<div class="backdrop" id="exportConfirmBackdrop" hidden>
+  <div class="modal" style="width:440px" role="dialog" aria-modal="true" aria-labelledby="exportConfirmTitle">
+    <header>
+      <h2 id="exportConfirmTitle">Unconfirmed lines</h2>
+      <button class="iconbtn" id="exportConfirmX" style="opacity:1" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m4 4 8 8M12 4l-8 8" stroke-linecap="round"/></svg>
+      </button>
+    </header>
+    <div class="body">
+      <p id="exportConfirmMsg" style="font-size:13px;color:#3B4149;line-height:1.5;"></p>
+    </div>
+    <footer>
+      <button class="ctl primary" id="exportConfirmGo">Export anyway</button>
+      <button class="ctl btn" id="exportConfirmCancel">Cancel</button>
     </footer>
   </div>
 </div>
@@ -1267,6 +1286,7 @@ $("#btnReset").addEventListener("click", () => {
 /* --------------------------- keyboard ---------------------------- */
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && !$("#backdrop").hidden) closeModal();
+  if (e.key === "Escape" && !$("#exportConfirmBackdrop").hidden) closeExportConfirm();
   if (e.key === "/" && !$("#view-rules").hidden
       && document.activeElement.tagName !== "INPUT"
       && document.activeElement.tagName !== "TEXTAREA") {
@@ -1724,6 +1744,25 @@ $("#pcExport").addEventListener("click", () => {
   if (!pcRows.length) { toast("Nothing to export — code the lines first."); return; }
   const base = pcBase();
   const rows = pcFilter.size ? base.filter(r => pcFilter.has(r.status)) : base;
+  if (!rows.length) { toast("No lines match the current filters to export."); return; }
+
+  const unconfirmed = rows.filter(r => r.status === "Review").length;
+  if (unconfirmed) {
+    pendingExportRows = rows;
+    $("#exportConfirmMsg").textContent =
+      `There ${unconfirmed === 1 ? "is" : "are"} ${unconfirmed} unconfirmed line`
+      + `${unconfirmed === 1 ? "" : "s"} still in Review. Exporting will send `
+      + `${unconfirmed === 1 ? "it" : "them"} to Jeff's approval queue as-is. `
+      + `Export anyway?`;
+    $("#exportConfirmBackdrop").hidden = false;
+    return;
+  }
+  doExport(rows);
+});
+
+/** Builds the CSV, pushes the rows into Jeff's queue, and removes them from
+ *  Part Coding — Export is a move, not a copy. */
+function doExport(rows) {
   const q = (v) => {
     const s = String(v ?? "");
     return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
@@ -1741,9 +1780,8 @@ $("#pcExport").addEventListener("click", () => {
   a.click();
   URL.revokeObjectURL(a.href);
 
-  // Export is what moves a line out of Part Coding and into Jeff's queue —
-  // every status goes, not just Auto/Manual. This is a move, not a copy:
-  // the lines disappear from Part Coding once they've landed in Admin.
+  // Every status goes, not just Auto/Manual — nothing is held back waiting
+  // for the batch to be "fully reviewed" first.
   const custLabel = $("#pcCustomer").value.replace(/^Customer:\s*/, "");
   rows.forEach(r => {
     adRows.push({
@@ -1762,6 +1800,22 @@ $("#pcExport").addEventListener("click", () => {
 
   toast(`Exported ${rows.length} line${rows.length === 1 ? "" : "s"} to CSV `
     + `and moved to Jeff's queue`);
+}
+
+let pendingExportRows = null;
+function closeExportConfirm() {
+  $("#exportConfirmBackdrop").hidden = true;
+  pendingExportRows = null;
+}
+$("#exportConfirmGo").addEventListener("click", () => {
+  const rows = pendingExportRows;
+  closeExportConfirm();
+  if (rows) doExport(rows);
+});
+$("#exportConfirmCancel").addEventListener("click", closeExportConfirm);
+$("#exportConfirmX").addEventListener("click", closeExportConfirm);
+$("#exportConfirmBackdrop").addEventListener("click", (e) => {
+  if (e.target.id === "exportConfirmBackdrop") closeExportConfirm();
 });
 
 $("#pcPaste").addEventListener("input", () => { if (!pcRows.length) renderPC(); });

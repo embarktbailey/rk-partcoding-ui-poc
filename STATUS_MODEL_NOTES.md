@@ -67,18 +67,33 @@ any open questions still needing a product decision.
    the color reflects match quality, which is a separate concern from the
    inventory problem the status itself flags.
 
-9. **Export is what moves a line to Jeff's queue — a move, not a copy.**
-   Clicking Export on the Part Coding screen downloads the CSV (unchanged)
-   *and* pushes the same rows into the Admin queue (`adRows`), tagged with
-   whichever customer is selected in the scope dropdown. Every status goes
-   — Review, RFQ, and Out of Stock included, not just Auto/Manual; nothing
-   is held back waiting for the batch to be "fully reviewed" first, since
-   everything ultimately shows up on Jeff's screen. The exported rows are
-   then **removed from the Part Coding table** — they only ever exist in
-   one place at a time, so there's no double-counting and no way to
-   re-export the same line twice. Export respects whatever's currently
-   filtered/searched, so exporting a subset leaves the rest in Part Coding
-   for further work.
+9. **"Reason" column renamed to "Review" on Part Coding.** That column's
+   icon is where the ISR actually opens the candidate picker and confirms
+   a match — "Reason" undersold what it does. Left as "Reason" on the
+   Admin screen, where it's read-only history for Jeff rather than a
+   confirm action.
+
+10. **Unconfirmed Review lines get a soft warning before export.** If any
+    line in the current export scope is still `Review` status, Export now
+    shows a confirm dialog ("There are N unconfirmed lines still in
+    Review. Exporting will send them to Jeff's approval queue as-is.
+    Export anyway?") before doing anything — Cancel aborts with no CSV
+    download and no rows moved. This only checks `Review`; `RFQ` and
+    `Out of Stock` aren't gated the same way since they're different kinds
+    of exceptions, not simply "hasn't been looked at yet."
+
+11. **Export is what moves a line to Jeff's queue — a move, not a copy.**
+    Clicking Export on the Part Coding screen downloads the CSV (unchanged)
+    *and* pushes the same rows into the Admin queue (`adRows`), tagged with
+    whichever customer is selected in the scope dropdown. Every status goes
+    — Review, RFQ, and Out of Stock included, not just Auto/Manual; nothing
+    is held back waiting for the batch to be "fully reviewed" first, since
+    everything ultimately shows up on Jeff's screen. The exported rows are
+    then **removed from the Part Coding table** — they only ever exist in
+    one place at a time, so there's no double-counting and no way to
+    re-export the same line twice. Export respects whatever's currently
+    filtered/searched, so exporting a subset leaves the rest in Part Coding
+    for further work.
 
 ## Status model
 
