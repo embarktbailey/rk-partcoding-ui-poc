@@ -66,9 +66,33 @@
 
   /* ---------- main ---------- */
   .main{flex:1;min-width:0;padding:22px 24px 18px;display:flex;flex-direction:column;}
-  .titlerow{display:flex;align-items:baseline;gap:10px;}
+  .titlerow{display:flex;align-items:center;gap:10px;}
   h1{font-size:22px;font-weight:600;letter-spacing:-.2px;}
   .subcount{font-size:12px;color:#8A9099;}
+  .userchip{
+    margin-left:auto;display:flex;align-items:center;gap:8px;
+  }
+  .avatar{
+    width:28px;height:28px;border-radius:50%;flex:none;
+    background:#E7EEFA;color:#1E4FA3;
+    font-size:10.5px;font-weight:700;letter-spacing:.2px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  select.ctl.userpick{max-width:148px;background:#fff;padding-left:8px;}
+  .submitted{font-size:11.5px;color:#5A6069;white-space:nowrap;}
+  .split{position:relative;}
+  .splitmenu{
+    position:absolute;right:0;top:calc(100% + 4px);z-index:25;
+    min-width:168px;background:#fff;border:1px solid var(--line);border-radius:6px;
+    box-shadow:0 8px 22px rgba(20,26,34,.16);padding:4px;
+    display:flex;flex-direction:column;
+  }
+  .splitmenu[hidden]{display:none;}
+  .splitmenu button{
+    text-align:left;font-size:12.5px;padding:8px 10px;border-radius:4px;color:#3B4149;
+  }
+  .splitmenu button:hover{background:var(--hover);}
+  .split .ctl .chev{margin-left:6px;font-size:8px;opacity:.7;vertical-align:middle;}
 
   /* toolbar */
   .toolbar{display:flex;align-items:center;gap:8px;margin-top:14px;flex-wrap:wrap;}
@@ -208,6 +232,10 @@
   .ledrow .rank{flex:none;}
   .ledrow input{flex:1;}
   .err{color:var(--red);font-size:12px;}
+  .errbanner{background:#FBE9E9;color:#B32C2C;font-size:13px;padding:9px 11px;border-radius:5px;line-height:1.45;}
+  .errlist{margin:10px 0 0;padding-left:18px;font-size:13px;color:#3B4149;line-height:1.5;}
+  .errlist li{margin:5px 0;}
+  .errlist .rownum{font-weight:600;font-variant-numeric:tabular-nums;}
   /* ---------- view switching ---------- */
   .view{flex:1;min-height:0;display:flex;flex-direction:column;}
   .view[hidden]{display:none;}
@@ -366,6 +394,15 @@
     <div class="titlerow">
       <h1>Part Coding</h1>
       <span class="subcount" id="pcShowing"></span>
+      <div class="userchip" title="Signed-in ISR">
+        <span class="avatar" id="pcAvatar" aria-hidden="true">JS</span>
+        <select class="ctl userpick" id="pcUser" aria-label="Signed in as">
+          <option selected>Joe Schmo</option>
+          <option>Jane Doe</option>
+          <option>Alex Rivera</option>
+          <option>Priya Nair</option>
+        </select>
+      </div>
     </div>
 
     <div class="toolbar">
@@ -457,10 +494,25 @@
     <div class="toolbar">
       <select class="ctl" id="adCustomer" aria-label="Filter by customer">
         <option value="">Customer: All</option>
-        <option value="Diamondback Energy">Diamondback Energy</option>
-        <option value="XTO Energy">XTO Energy</option>
-        <option value="Ovintiv">Ovintiv</option>
       </select>
+      <select class="ctl" id="adIsr" aria-label="Filter by ISR">
+        <option value="">ISR: All</option>
+      </select>
+      <select class="ctl" id="adDate" aria-label="Filter by date">
+        <option value="">Date: All</option>
+      </select>
+      <span class="spacer"></span>
+      <button class="ctl btn" id="adUpload">Upload</button>
+      <div class="split" id="adExportWrap">
+        <button class="ctl btn" id="adExport" aria-haspopup="menu" aria-expanded="false" aria-controls="adExportMenu">
+          Export<span class="chev">▼</span>
+        </button>
+        <div class="splitmenu" id="adExportMenu" role="menu" hidden>
+          <button type="button" role="menuitem" data-export="all">Export all</button>
+          <button type="button" role="menuitem" data-export="selected">Export selected</button>
+        </div>
+      </div>
+      <input type="file" id="adFile" accept=".csv,text/csv,text/plain" hidden>
     </div>
 
     <div class="summary">
@@ -481,10 +533,11 @@
     </div>
 
     <div class="tablewrap">
-      <table id="adTable" style="min-width:1120px">
+      <table id="adTable" style="min-width:1320px">
         <colgroup>
           <col style="width:34px">
-          <col style="width:116px"><col style="width:46px"><col style="width:82px">
+          <col style="width:116px"><col style="width:108px"><col style="width:128px">
+          <col style="width:46px"><col style="width:82px">
           <col style="width:68px"><col style="width:178px"><col style="width:78px">
           <col><col style="width:58px"><col style="width:46px">
           <col style="width:58px"><col style="width:50px"><col style="width:58px">
@@ -497,6 +550,8 @@
                      aria-label="Select all pending lines in view">
             </th>
             <th data-key="cust"><button>Customer<span class="caret">▲</span></button></th>
+            <th data-key="isr"><button>ISR<span class="caret">▲</span></button></th>
+            <th data-key="submittedAt"><button>Submitted<span class="caret">▲</span></button></th>
             <th data-key="mark"><button>Mark<span class="caret">▲</span></button></th>
             <th data-key="status"><button>Status<span class="caret">▲</span></button></th>
             <th data-key="qty"><button>Quantity<span class="caret">▲</span></button></th>
@@ -661,6 +716,25 @@
     <footer>
       <button class="ctl primary" id="exportConfirmGo">Export anyway</button>
       <button class="ctl btn" id="exportConfirmCancel">Cancel</button>
+    </footer>
+  </div>
+</div>
+
+<!-- ====== ADMIN OFFLINE IMPORT ERRORS ====== -->
+<div class="backdrop" id="adImportBackdrop" hidden>
+  <div class="modal" style="width:520px" role="dialog" aria-modal="true" aria-labelledby="adImportTitle">
+    <header>
+      <h2 id="adImportTitle">Upload rejected</h2>
+      <button class="iconbtn" id="adImportX" style="opacity:1" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m4 4 8 8M12 4l-8 8" stroke-linecap="round"/></svg>
+      </button>
+    </header>
+    <div class="body">
+      <p class="errbanner" id="adImportBanner"></p>
+      <ul class="errlist" id="adImportList"></ul>
+    </div>
+    <footer>
+      <button class="ctl primary" id="adImportOk">Fix and re-upload</button>
     </footer>
   </div>
 </div>
@@ -1287,6 +1361,7 @@ $("#btnReset").addEventListener("click", () => {
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && !$("#backdrop").hidden) closeModal();
   if (e.key === "Escape" && !$("#exportConfirmBackdrop").hidden) closeExportConfirm();
+  if (e.key === "Escape" && !$("#adImportBackdrop").hidden) closeAdImport();
   if (e.key === "/" && !$("#view-rules").hidden
       && document.activeElement.tagName !== "INPUT"
       && document.activeElement.tagName !== "TEXTAREA") {
@@ -1319,6 +1394,7 @@ const VIEWS = {
 
 function showView(name) {
   closePop();
+  if (typeof closeAdExportMenu === "function") closeAdExportMenu();
   for (const [k, v] of Object.entries(VIEWS)) $(v.sel).hidden = (k !== name);
   document.querySelectorAll(".nav-item[data-view]").forEach(b =>
     b.classList.toggle("active", b.dataset.view === name));
@@ -1340,8 +1416,8 @@ const CANDS = {
     { code: "36754D",    desc: "10 150 SCH/40S STD RFWN FLANGE 316SS DOMESTIC",        match: 89,  inv: 8,   mba: "Yes" },
   ],
   fl10w: [
-    { code: "36754B",    desc: "10 150 SCH/40S STD WIDE FLANGE 316SS IMPORT",  match: 88, inv: 500, mba: "Yes" },
-    { code: "36754",     desc: "10 150 SCH/40S STD RFWN FLANGE 316SS IMPORT",  match: 81, inv: 714, mba: "Yes" },
+    { code: "36754B",    desc: "10 150 SCH/40S STD WIDE FLANGE 316SS IMPORT",  match: 85, inv: 500, mba: "Yes" },
+    { code: "36754",     desc: "10 150 SCH/40S STD RFWN FLANGE 316SS IMPORT",  match: 81, inv: 714, mba: "No"  },
     { code: "36758W",    desc: "10 300 SCH/40S WIDE RFWN FLANGE 316SS IMPORT", match: 74, inv: 32,  mba: "No"  },
     { code: "36716",     desc: "10 150 SCH/10S RFWN FLANGE 316SS IMPORT",      match: 68, inv: 45,  mba: "No"  },
     { code: "0-51570-6", desc: "10 150 SCH/20 RFWN 316SS",                     match: 61, inv: 74,  mba: "No"  },
@@ -1371,22 +1447,22 @@ const CANDS = {
     { code: "37134",  desc: "6 SCH/40S 45 DEG LR ELBOW 316SS BW IMPORT",   match: 66, inv: 73,  mba: "Yes" },
   ],
   tee8: [
-    { code: "37208",  desc: "8 SCH/40S STRAIGHT TEE 316SS BW IMPORT",       match: 79, inv: 41, mba: "Yes" },
-    { code: "37208D", desc: "8 SCH/40S STRAIGHT TEE 316SS BW DOMESTIC",     match: 74, inv: 6,  mba: "Yes" },
-    { code: "37206",  desc: "8 SCH/10S STRAIGHT TEE 316SS BW IMPORT",       match: 70, inv: 22, mba: "No"  },
+    { code: "37208",  desc: "8 SCH/40S STRAIGHT TEE 316SS BW IMPORT",       match: 91, inv: 41, mba: "Yes" },
+    { code: "37208D", desc: "8 SCH/40S STRAIGHT TEE 316SS BW DOMESTIC",     match: 84, inv: 6,  mba: "Yes" },
+    { code: "37206",  desc: "8 SCH/10S STRAIGHT TEE 316SS BW IMPORT",       match: 77, inv: 22, mba: "No"  },
     { code: "37210",  desc: "8 X 6 SCH/40S REDUCING TEE 316SS BW IMPORT",   match: 58, inv: 11, mba: "No"  },
   ],
   red8x4: [
-    { code: "37412", desc: "8 X 4 SCH/40S CONC REDUCER 316SS BW IMPORT", match: 74, inv: 26, mba: "No" },
-    { code: "37416", desc: "8 X 4 SCH/40S ECC REDUCER 316SS BW IMPORT",  match: 71, inv: 18, mba: "No" },
-    { code: "37414", desc: "8 X 4 SCH/10S CONC REDUCER 316SS BW IMPORT", match: 63, inv: 31, mba: "No" },
-    { code: "37418", desc: "8 X 6 SCH/40S CONC REDUCER 316SS BW IMPORT", match: 49, inv: 44, mba: "No" },
+    { code: "37412", desc: "8 X 4 SCH/40S CONC REDUCER 316SS BW IMPORT", match: 92, inv: 26, mba: "Yes" },
+    { code: "37416", desc: "8 X 4 SCH/40S ECC REDUCER 316SS BW IMPORT",  match: 81, inv: 18, mba: "No"  },
+    { code: "37414", desc: "8 X 4 SCH/10S CONC REDUCER 316SS BW IMPORT", match: 73, inv: 31, mba: "No"  },
+    { code: "37418", desc: "8 X 6 SCH/40S CONC REDUCER 316SS BW IMPORT", match: 49, inv: 44, mba: "No"  },
   ],
   bfly10: [
-    { code: "41330",  desc: "10 LUG BFLY DI BODY SS STEM SS DISC EPDM SEAT GEAR OP",  match: 81, inv: 12, mba: "No" },
-    { code: "41330V", desc: "10 LUG BFLY DI BODY SS STEM SS DISC BUNA SEAT GEAR OP",  match: 76, inv: 5,  mba: "No" },
-    { code: "41332",  desc: "10 LUG BFLY DI BODY SS STEM SS DISC EPDM SEAT LEVER OP", match: 69, inv: 21, mba: "No" },
-    { code: "41340",  desc: "10 WAFER BFLY DI BODY SS DISC EPDM SEAT GEAR OP",        match: 58, inv: 8,  mba: "No" },
+    { code: "41330",  desc: "10 LUG BFLY DI BODY SS STEM SS DISC EPDM SEAT GEAR OP",  match: 93, inv: 12, mba: "Yes" },
+    { code: "41330V", desc: "10 LUG BFLY DI BODY SS STEM SS DISC BUNA SEAT GEAR OP",  match: 86, inv: 5,  mba: "No"  },
+    { code: "41332",  desc: "10 LUG BFLY DI BODY SS STEM SS DISC EPDM SEAT LEVER OP", match: 79, inv: 21, mba: "No"  },
+    { code: "41340",  desc: "10 WAFER BFLY DI BODY SS DISC EPDM SEAT GEAR OP",        match: 68, inv: 8,  mba: "No"  },
   ],
   bfly8hp: [
     { code: "41528", desc: "8 LUG HP BFLY SS BODY SS DISC RPTFE SEAT GEAR OP", match: 41, inv: 0,  mba: "No" },
@@ -1394,15 +1470,15 @@ const CANDS = {
     { code: "41338", desc: "8 LUG BFLY DI BODY SS DISC EPDM SEAT GEAR OP",     match: 29, inv: 17, mba: "No" },
   ],
   chk8: [
-    { code: "43120", desc: "8 150 SPLIT DISC WAFER CHECK SS BODY VITON SEAT", match: 38, inv: 0, mba: "No" },
-    { code: "43118", desc: "8 150 SWING CHECK CS BODY SS DISC",               match: 31, inv: 4, mba: "No" },
-    { code: "43122", desc: "8 150 DUO CHECK SS BODY EPDM SEAT",               match: 27, inv: 2, mba: "No" },
+    { code: "43120", desc: "8 150 SPLIT DISC WAFER CHECK SS BODY VITON SEAT", match: 93, inv: 18, mba: "Yes" },
+    { code: "43118", desc: "8 150 SWING CHECK CS BODY SS DISC",               match: 71, inv: 4,  mba: "No"  },
+    { code: "43122", desc: "8 150 DUO CHECK SS BODY EPDM SEAT",               match: 64, inv: 2,  mba: "No"  },
   ],
   ball2: [
-    { code: "44870", desc: "2 3000 FNPT FP BALL VALVE 316SS LO SPRING RETURN NACE",       match: 62, inv: 88, mba: "Yes" },
-    { code: "44868", desc: "2 2000 FNPT FP BALL VALVE 316SS LEVER OP NACE",               match: 55, inv: 14, mba: "No"  },
-    { code: "44872", desc: "2 3000 FNPT RP BALL VALVE 316SS LO SPRING RETURN NACE",       match: 48, inv: 7,  mba: "No"  },
-    { code: "44866", desc: "1-1/2 3000 FNPT FP BALL VALVE 316SS LO SPRING RETURN NACE",   match: 41, inv: 11, mba: "No"  },
+    { code: "44870", desc: "2 3000 FNPT FP BALL VALVE 316SS LO SPRING RETURN NACE",       match: 91, inv: 88, mba: "Yes" },
+    { code: "44868", desc: "2 2000 FNPT FP BALL VALVE 316SS LEVER OP NACE",               match: 75, inv: 14, mba: "No"  },
+    { code: "44872", desc: "2 3000 FNPT RP BALL VALVE 316SS LO SPRING RETURN NACE",       match: 68, inv: 7,  mba: "No"  },
+    { code: "44866", desc: "1-1/2 3000 FNPT FP BALL VALVE 316SS LO SPRING RETURN NACE",   match: 51, inv: 11, mba: "No"  },
   ],
   ballhalf: [
     { code: "44810", desc: "1/2 3000 FNPT FP BALL VALVE 316SS NACE", match: 93, inv: 210, mba: "Yes" },
@@ -1411,9 +1487,9 @@ const CANDS = {
     { code: "44814", desc: "1/2 3000 SW FP BALL VALVE 316SS NACE",   match: 70, inv: 24,  mba: "No"  },
   ],
   bleed10: [
-    { code: "38644", desc: "10 150 BLEED RING 316SS 2 X 1/2 FNPT TAPS", match: 44, inv: 6, mba: "No" },
-    { code: "38642", desc: "10 150 BLEED RING 316SS 1 X 1/2 FNPT TAP",  match: 35, inv: 2, mba: "No" },
-    { code: "38646", desc: "10 300 BLEED RING 316SS 2 X 1/2 FNPT TAPS", match: 28, inv: 0, mba: "No" },
+    { code: "38644", desc: "10 150 BLEED RING 316SS 2 X 1/2 FNPT TAPS", match: 91, inv: 6, mba: "Yes" },
+    { code: "38642", desc: "10 150 BLEED RING 316SS 1 X 1/2 FNPT TAP",  match: 78, inv: 2, mba: "No"  },
+    { code: "38646", desc: "10 300 BLEED RING 316SS 2 X 1/2 FNPT TAPS", match: 64, inv: 0, mba: "No"  },
   ],
   cgi10: [
     { code: "35915", desc: "10 150 CGI FLEX GASKET 316SS INNER RING AND WINDING W/GRAPHITE FILLER", match: 33, inv: 0,  mba: "No" },
@@ -1421,10 +1497,10 @@ const CANDS = {
     { code: "36716", desc: "10 150 SCH/10S RFWN FLANGE 316SS IMPORT",                               match: 19, inv: 45, mba: "No" },
   ],
   gk10: [
-    { code: "35915",  desc: "10 150 CGI FLEX GASKET 316SS INNER RING AND WINDING W/GRAPHITE FILLER", match: 67, inv: 0, mba: "No" },
-    { code: "35915D", desc: "10 150 CGI FLEX GASKET 316SS DOMESTIC W/GRAPHITE FILLER",               match: 59, inv: 0, mba: "No" },
-    { code: "35910",  desc: "10 150 CGI GASKET 316SS OUTER RING GRAPHITE",                           match: 52, inv: 0, mba: "No" },
-    { code: "35917",  desc: "10 300 CGI FLEX GASKET 316SS INNER RING W/GRAPHITE FILLER",             match: 44, inv: 0, mba: "No" },
+    { code: "35915",  desc: "10 150 CGI FLEX GASKET 316SS INNER RING AND WINDING W/GRAPHITE FILLER", match: 67, inv: 48, mba: "No" },
+    { code: "35915D", desc: "10 150 CGI FLEX GASKET 316SS DOMESTIC W/GRAPHITE FILLER",               match: 59, inv: 22, mba: "No" },
+    { code: "35910",  desc: "10 150 CGI GASKET 316SS OUTER RING GRAPHITE",                           match: 52, inv: 80, mba: "No" },
+    { code: "35917",  desc: "10 300 CGI FLEX GASKET 316SS INNER RING W/GRAPHITE FILLER",             match: 44, inv: 9,  mba: "No" },
   ],
   cgi14: [
     { code: "35919", desc: "14 150 CGI FLEX GASKET 316SS INNER RING W/GRAPHITE FILLER", match: 31, inv: 0,  mba: "No" },
@@ -1452,11 +1528,13 @@ const CANDS = {
 
 /* ------------------------------ code book ------------------------------
  * What the matcher "knows". Keyed on the raw pasted description.
+ * Mix for the 15 example lines: 10 Auto, 2 Review, 1 Out of Stock, 2 RFQ.
+ * Review: higher-confidence hit is an MBA item; lower-confidence is not.
  * --------------------------------------------------------------------- */
 const CODEBOOK = [
   { raw: '8" to 4" stainless reducer',
-    status: "Review", code: "37412", rk: "8 X 4 SCH/40S CONC REDUCER 316SS BW IMPORT",
-    inv: 26, mba: "No", source: "AI", conf: 74, fam: "red8x4" },
+    status: "Auto", code: "37412", rk: "8 X 4 SCH/40S CONC REDUCER 316SS BW IMPORT",
+    inv: 26, mba: "Yes", source: "AI", conf: 92, fam: "red8x4" },
 
   { raw: `20' 8" sch 40 stainless pipe`,
     status: "Auto", code: "30820", rk: "8 SCH/40S SMLS PIPE 316SS A312 20FT RL",
@@ -1471,37 +1549,36 @@ const CODEBOOK = [
     inv: 62, mba: "Yes", source: "AI", conf: 91, fam: "el45" },
 
   { raw: '8" schedule 40 stianless weld neck tee',
-    status: "Review", code: "37208", rk: "8 SCH/40S STRAIGHT TEE 316SS BW IMPORT",
-    inv: 41, mba: "Yes", source: "AI", conf: 78, fam: "tee8" },
+    status: "Auto", code: "37208", rk: "8 SCH/40S STRAIGHT TEE 316SS BW IMPORT",
+    inv: 41, mba: "Yes", source: "AI", conf: 91, fam: "tee8" },
 
   { raw: '10" - Lug, DI Body, SS Stem, SS Disc, Resilient Seat, Gear',
-    status: "Review", code: "41330", rk: "10 LUG BFLY DI BODY SS STEM SS DISC EPDM SEAT GEAR OP",
-    inv: 12, mba: "No", source: "AI", conf: 81, fam: "bfly10" },
+    status: "Auto", code: "41330", rk: "10 LUG BFLY DI BODY SS STEM SS DISC EPDM SEAT GEAR OP",
+    inv: 12, mba: "Yes", source: "AI", conf: 93, fam: "bfly10" },
 
   { raw: '8" - Lug, SS Body, SS Stem, SS Disc, High Performance, Gear',
     status: "RFQ", code: "RFQ", rk: "",
     inv: null, mba: null, source: "AI", conf: 5, fam: "bfly8hp" },
 
   { raw: '8" - SS Body and Disc, Viton Seat, Split Disc Swing',
-    status: "RFQ", code: "RFQ", rk: "",
-    inv: null, mba: null, source: "AI", conf: 5, fam: "chk8" },
+    status: "Auto", code: "43120", rk: "8 150 SPLIT DISC WAFER CHECK SS BODY VITON SEAT",
+    inv: 18, mba: "Yes", source: "AI", conf: 93, fam: "chk8" },
 
   { raw: "Ball, 200 psi, FNPT, FP, SS Body, LO Spring Return Handle, NACE",
-    status: "Review", code: "44870", rk: "2 3000 FNPT FP BALL VALVE 316SS LO SPRING RETURN NACE",
-    inv: null, mba: null, source: "AI", conf: 62, fam: "ball2" },
+    status: "Auto", code: "44870", rk: "2 3000 FNPT FP BALL VALVE 316SS LO SPRING RETURN NACE",
+    inv: 88, mba: "Yes", source: "AI", conf: 91, fam: "ball2" },
 
   { raw: "Bleed Ring w/ 2 x 1/2 in NPT taps",
-    status: "RFQ", code: "RFQ", rk: "",
-    inv: null, mba: null, source: "AI", conf: 5, fam: "bleed10" },
+    status: "Auto", code: "38644", rk: "10 150 BLEED RING 316SS 2 X 1/2 FNPT TAPS",
+    inv: 6, mba: "Yes", source: "AI", conf: 91, fam: "bleed10" },
 
-  /* --- the four rows shown in the wireframe's results table --- */
   { raw: '10" 150# SS Weld Neck Flange',
     status: "Auto", code: "36754", rk: "10 150 SCH/40S STD RFWN FLANGE 316SS IMPORT",
     inv: 700, mba: "Yes", source: "AI", conf: 92, fam: "fl10" },
 
   { raw: '10" 150# SS Wide Flange',
     status: "Review", code: "36754B", rk: "10 150 SCH/40S STD WIDE FLANGE 316SS IMPORT",
-    inv: 500, mba: "No", source: "AI", conf: 85, fam: "fl10w" },
+    inv: 500, mba: "Yes", source: "AI", conf: 85, fam: "fl10w" },
 
   { raw: '10" CGI',
     status: "RFQ", code: "RFQ", rk: "",
@@ -1509,7 +1586,7 @@ const CODEBOOK = [
 
   { raw: '10" 150 CGI Gasket',
     status: "Review", code: "35915", rk: "10 150 CGI FLEX GASKET 316SS INNER RING AND WINDING W/GRAPHITE FILLER",
-    inv: null, mba: null, source: "AI", conf: 67, fam: "gk10" },
+    inv: 48, mba: "No", source: "AI", conf: 67, fam: "gk10" },
 
   /* confident AI match, but the top hit has 0 on hand — flagged Out of Stock
      instead of Auto so the ISR catches it before it ships short. */
@@ -1606,7 +1683,7 @@ function pillRow(scopeSel, rows, filter) {
 /* ------------------- shared column sorting (PC + Admin) -------------------
  * Same click-to-sort / caret pattern as the Rule Engine's headRow, applied
  * to the two other tables now that they have search filtering too. */
-const NUMERIC_KEYS = new Set(["mark", "qty", "inv", "conf"]);
+const NUMERIC_KEYS = new Set(["mark", "qty", "inv", "conf", "submittedAt"]);
 
 function sortRows(rows, sortState) {
   const { key, dir } = sortState;
@@ -1768,10 +1845,14 @@ function doExport(rows) {
     return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
   };
   const head = ["Mark", "Status", "Quantity", "Customer Description", "Part Code",
-                "RK Description", "RK Inv", "MBA", "Source", "Conf", "Reason"];
+                "RK Description", "RK Inv", "MBA", "Source", "Conf", "Reason",
+                "ISR", "Submitted"];
+  const submittedAt = Date.now();
+  const isr = currentIsr();
+  const submittedLabel = formatSubmittedPlain(submittedAt);
   const body = rows.map(r => [r.mark, r.status, r.qty, r.cdesc,
     r.status === "RFQ" ? "RFQ" : r.code, r.rk, r.inv ?? "", r.mba ?? "",
-    r.source, r.conf + "%", r.reason].map(q).join(","));
+    r.source, r.conf + "%", r.reason, isr, submittedLabel].map(q).join(","));
   const blob = new Blob([[head.map(q).join(","), ...body].join("\r\n")],
                         { type: "text/csv;charset=utf-8" });
   const a = document.createElement("a");
@@ -1780,15 +1861,15 @@ function doExport(rows) {
   a.click();
   URL.revokeObjectURL(a.href);
 
-  // Every status goes, not just Auto/Manual — nothing is held back waiting
-  // for the batch to be "fully reviewed" first.
+  // Move every exported line as-is, including ISR overrides (Review → Manual,
+  // candidate swaps, typed codes). Status is copied, not re-derived.
   const custLabel = $("#pcCustomer").value.replace(/^Customer:\s*/, "");
   rows.forEach(r => {
     adRows.push({
       id: "ad" + (adAutoId++), cust: custLabel, mark: r.mark, qty: r.qty,
       cdesc: r.cdesc, status: r.status, code: r.code, rk: r.rk, inv: r.inv,
       mba: r.mba, source: r.source, conf: r.conf, fam: r.fam,
-      reason: r.reason, approval: null,
+      reason: r.reason, approval: null, isr, submittedAt,
     });
   });
   const movedIds = new Set(rows.map(r => r.id));
@@ -1829,80 +1910,60 @@ document.querySelectorAll("#view-partcoding .cnt").forEach(b =>
   }));
 wireSortHeaders("#pcHeadRow", () => pcSort, (v) => { pcSort = v; }, renderPC);
 
-/* ====================== PART CODING ADMIN dataset ====================== */
-let adRows = [
-  { cust: "Diamondback Energy", mark: 1, qty: 2, cdesc: '10" 150# SS Weld Neck Flange',
-    status: "Auto", code: "36754", rk: "10 150 SCH/40S STD RFWN FLANGE 316SS IMPORT",
-    inv: 700, mba: "Yes", source: "AI", conf: 92, fam: "fl10" },
-  { cust: "Diamondback Energy", mark: 2, qty: 1, cdesc: '10" 150# SS Wide Flange',
-    status: "Review", code: "36754B", rk: "10 150 SCH/40S STD WIDE FLANGE 316SS IMPORT",
-    inv: 500, mba: "No", source: "AI", conf: 85, fam: "fl10w" },
-  { cust: "Diamondback Energy", mark: 3, qty: 1, cdesc: '10" CGI',
-    status: "RFQ", code: "RFQ", rk: "", inv: null, mba: null,
-    source: "AI", conf: 5, fam: "cgi10" },
-  { cust: "Diamondback Energy", mark: 4, qty: 1, cdesc: '10" 150 CGI Gasket',
-    status: "Manual", code: "35915",
-    rk: "10 150 CGI FLEX GASKET 316SS INNER RING AND WINDING W/GRAPHITE FILLER",
-    inv: null, mba: null, source: "Manual", conf: 67, fam: "gk10" },
-  { cust: "Diamondback Energy", mark: 5, qty: 4, cdesc: '2" 3000# FNPT ball valve SS NACE',
-    status: "Coded", code: "44870", rk: "2 3000 FNPT FP BALL VALVE 316SS LO SPRING RETURN NACE",
-    inv: 88, mba: "Yes", source: "AI", conf: 97, fam: "ball2" },
-  { cust: "Diamondback Energy", mark: 6, qty: 6, cdesc: '6" sch 40 SS 90 deg LR elbow BW',
-    status: "Auto", code: "37132", rk: "6 SCH/40S 90 DEG LR ELBOW 316SS BW IMPORT",
-    inv: 154, mba: "Yes", source: "AI", conf: 95, fam: "el90" },
+function currentIsr() { return $("#pcUser").value; }
+function initials(name) {
+  return String(name).split(/\s+/).filter(Boolean).map(w => w[0]).join("").slice(0, 2).toUpperCase();
+}
+function syncUserChip() { $("#pcAvatar").textContent = initials(currentIsr()); }
+$("#pcUser").addEventListener("change", syncUserChip);
+syncUserChip();
 
-  { cust: "XTO Energy", mark: 1, qty: 1, cdesc: '8" 150# RF blind flange CS',
-    status: "Review", code: "36190", rk: "8 150 RF BLIND FLANGE A105 CS DOMESTIC",
-    inv: 47, mba: "Yes", source: "AI", conf: 79, fam: "blind8" },
-  { cust: "XTO Energy", mark: 2, qty: 2, cdesc: '8" HP butterfly lug SS gear op',
-    status: "RFQ", code: "RFQ", rk: "", inv: null, mba: null,
-    source: "AI", conf: 5, fam: "bfly8hp" },
-  { cust: "XTO Energy", mark: 3, qty: 12, cdesc: '1/2" 316 SS NPT full port ball valve',
-    status: "Auto", code: "44810", rk: "1/2 3000 FNPT FP BALL VALVE 316SS NACE",
-    inv: 210, mba: "Yes", source: "AI", conf: 93, fam: "ballhalf" },
-  { cust: "XTO Energy", mark: 4, qty: 2, cdesc: `20' 8" sch 40 SS smls pipe`,
-    status: "Coded", code: "30820", rk: "8 SCH/40S SMLS PIPE 316SS A312 20FT RL",
-    inv: 1240, mba: "Yes", source: "AI", conf: 96, fam: "pipe8" },
-  { cust: "XTO Energy", mark: 5, qty: 1, cdesc: 'Bleed ring 2 x 1/2 NPT taps 10" 150#',
-    status: "Manual", code: "38644", rk: "10 150 BLEED RING 316SS 2 X 1/2 FNPT TAPS",
-    inv: null, mba: null, source: "Manual", conf: 44, fam: "bleed10" },
-  { cust: "XTO Energy", mark: 6, qty: 3, cdesc: '8" to 4" stainless reducer',
-    status: "Review", code: "37412", rk: "8 X 4 SCH/40S CONC REDUCER 316SS BW IMPORT",
-    inv: 26, mba: "No", source: "AI", conf: 74, fam: "red8x4" },
-  { cust: "XTO Energy", mark: 7, qty: 1, cdesc: '6" 150# SS Blind Flange',
-    status: "Out of Stock", code: "36194D", rk: "6 150 RF BLIND FLANGE 316SS DOMESTIC",
-    inv: 34, mba: "Yes", source: "Manual", conf: 88, fam: "blind6",
-    reason: "36194 was a 96% match but 0 on hand — swapped to 36194D (34 on hand), confirmed equivalent." },
+function formatSubmittedPlain(ts) {
+  if (!ts) return "";
+  return new Date(ts).toLocaleString(undefined, {
+    month: "numeric", day: "numeric", year: "numeric",
+    hour: "numeric", minute: "2-digit",
+  });
+}
+function submittedDay(ts) {
+  if (!ts) return "";
+  const d = new Date(ts);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+function submittedDayLabel(key) {
+  const [y, m, d] = key.split("-").map(Number);
+  if (!y) return key;
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, {
+    month: "numeric", day: "numeric", year: "numeric",
+  });
+}
+function submittedCell(ts) {
+  const s = formatSubmittedPlain(ts);
+  return s ? `<span class="submitted">${esc(s)}</span>` : '<span class="dash">–</span>';
+}
 
-  { cust: "Ovintiv", mark: 1, qty: 2, cdesc: '8" 150# SS weld neck flange',
-    status: "Auto", code: "36752", rk: "8 150 SCH/40S STD RFWN FLANGE 316SS IMPORT",
-    inv: 318, mba: "Yes", source: "AI", conf: 94, fam: "fl8" },
-  { cust: "Ovintiv", mark: 2, qty: 1, cdesc: '8" SS split disc swing check viton seat',
-    status: "RFQ", code: "RFQ", rk: "", inv: null, mba: null,
-    source: "AI", conf: 5, fam: "chk8" },
-  { cust: "Ovintiv", mark: 3, qty: 1, cdesc: '10" lug BFLY DI body resilient seat gear',
-    status: "Review", code: "41330", rk: "10 LUG BFLY DI BODY SS STEM SS DISC EPDM SEAT GEAR OP",
-    inv: 12, mba: "No", source: "AI", conf: 81, fam: "bfly10" },
-  { cust: "Ovintiv", mark: 4, qty: 8, cdesc: '3" 150# RF SS spiral wound gasket',
-    status: "Coded", code: "35902", rk: "3 150 SPIRAL WOUND GASKET 316SS/GRAPHITE CS RING",
-    inv: 340, mba: "Yes", source: "AI", conf: 98, fam: "spiral3" },
-  { cust: "Ovintiv", mark: 5, qty: 1, cdesc: '14" CGI',
-    status: "RFQ", code: "RFQ", rk: "", inv: null, mba: null,
-    source: "AI", conf: 5, fam: "cgi14" },
-  { cust: "Ovintiv", mark: 6, qty: 1, cdesc: '8" sch 40 SS straight tee BW',
-    status: "Coded", code: "37208", rk: "8 SCH/40S STRAIGHT TEE 316SS BW IMPORT",
-    inv: 41, mba: "Yes", source: "AI", conf: 90, fam: "tee8" },
-].map((r, i) => ({ ...r, id: "ad" + (i + 1), approval: null, reason: r.reason || "" }));
-/** Starting point for ids handed to rows submitted from Part Coding via Export,
- *  kept well clear of the "ad1".."ad19" seed ids above. */
-let adAutoId = 1000;
+/* ====================== PART CODING ADMIN dataset ======================
+ * Starts empty — lines only appear here after Export from Part Coding,
+ * carrying whatever status they had at export time (Auto / Manual / Review /
+ * Out of Stock / RFQ). */
+let adRows = [];
+let adAutoId = 1;
 
 function adSearchQuery() { return $("#adSearch").value.trim().toLowerCase(); }
 function adBase() {
   const c = $("#adCustomer").value;
-  let rows = c ? adRows.filter(r => r.cust === c) : adRows;
+  const isr = $("#adIsr").value;
+  const day = $("#adDate").value;
+  let rows = adRows;
+  if (c) rows = rows.filter(r => r.cust === c);
+  if (isr) rows = rows.filter(r => r.isr === isr);
+  if (day) rows = rows.filter(r => submittedDay(r.submittedAt) === day);
   const q = adSearchQuery();
-  if (q) rows = rows.filter(r => [r.cust, r.mark, r.cdesc, r.code, r.rk, r.source, r.reason]
+  if (q) rows = rows.filter(r => [r.cust, r.isr, r.mark, r.cdesc, r.code, r.rk,
+    r.source, r.reason, formatSubmittedPlain(r.submittedAt)]
     .join(" ").toLowerCase().includes(q));
   return rows;
 }
@@ -1931,20 +1992,61 @@ function syncSelUI() {
     tr.classList.toggle("selrow", adSel.has(tr.dataset.row)));
 }
 
+function refreshAdCustomers() {
+  const sel = $("#adCustomer");
+  const prev = sel.value;
+  const custs = [...new Set(adRows.map(r => r.cust))]
+    .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+  sel.innerHTML = `<option value="">Customer: All</option>` +
+    custs.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+  sel.value = custs.includes(prev) ? prev : "";
+}
+
+function refreshAdIsrs() {
+  const sel = $("#adIsr");
+  const prev = sel.value;
+  const isrs = [...new Set(adRows.map(r => r.isr).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+  sel.innerHTML = `<option value="">ISR: All</option>` +
+    isrs.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join("");
+  sel.value = isrs.includes(prev) ? prev : "";
+}
+
+function refreshAdDates() {
+  const sel = $("#adDate");
+  const prev = sel.value;
+  const days = [...new Set(adRows.map(r => submittedDay(r.submittedAt)).filter(Boolean))]
+    .sort((a, b) => b.localeCompare(a));
+  sel.innerHTML = `<option value="">Date: All</option>` +
+    days.map(d => `<option value="${esc(d)}">${esc(submittedDayLabel(d))}</option>`).join("");
+  sel.value = days.includes(prev) ? prev : "";
+}
+
 function renderAD() {
+  refreshAdCustomers();
+  refreshAdIsrs();
+  refreshAdDates();
   const base = adBase();
   pillRow("#view-admin", base, adFilter);
   $("#adTotal").textContent = "Total: " + base.length;
 
   const rows = adVisible();
   updateSortHeaders("#adHeadRow", adSort);
-  $("#adShowing").textContent = rows.length === adRows.length
-    ? `${adRows.length} lines across ${new Set(adRows.map(r => r.cust)).size} customers`
-    : `showing ${rows.length} of ${adRows.length}`;
+  const nCust = new Set(adRows.map(r => r.cust)).size;
+  $("#adShowing").textContent = !adRows.length ? ""
+    : rows.length === adRows.length
+      ? `${adRows.length} line${adRows.length === 1 ? "" : "s"} across ${nCust} customer${nCust === 1 ? "" : "s"}`
+      : `showing ${rows.length} of ${adRows.length}`;
 
   const tb = $("#adBody");
+  if (!adRows.length) {
+    tb.innerHTML = `<tr class="empty"><td colspan="16">
+      No lines in the queue yet — export coded lines from Part Coding to send them here.</td></tr>`;
+    syncSelUI();
+    return;
+  }
   if (!rows.length) {
-    tb.innerHTML = `<tr class="empty"><td colspan="14">
+    tb.innerHTML = `<tr class="empty"><td colspan="16">
       Nothing in the queue for these filters.
       <button class="ctl ghost" data-clear="ad">Clear filters</button></td></tr>`;
     syncSelUI();
@@ -1970,6 +2072,8 @@ function renderAD() {
                   aria-label="Select ${esc(r.cust)} line ${r.mark}">`
         : ""}</td>
       <td class="cust">${esc(r.cust)}</td>
+      <td>${esc(r.isr || "")}</td>
+      <td>${submittedCell(r.submittedAt)}</td>
       <td class="num">${r.mark}</td>
       <td>${stPill(r.status)}</td>
       <td class="num">${r.qty}</td>
@@ -1989,6 +2093,12 @@ function renderAD() {
 }
 
 $("#adCustomer").addEventListener("change", () => {
+  adFilter.clear(); adSel.clear(); renderAD();
+});
+$("#adIsr").addEventListener("change", () => {
+  adFilter.clear(); adSel.clear(); renderAD();
+});
+$("#adDate").addEventListener("change", () => {
   adFilter.clear(); adSel.clear(); renderAD();
 });
 $("#adSearch").addEventListener("input", () => { adSel.clear(); renderAD(); });
@@ -2033,6 +2143,193 @@ $("#adApproveSel").addEventListener("click", () => batchDecide("approved"));
 $("#adRejectSel").addEventListener("click", () => batchDecide("rejected"));
 $("#adClearSel").addEventListener("click", () => { adSel.clear(); renderAD(); });
 
+/* -------------------- admin offline export / upload --------------------
+ * CSV round-trip so Jeff can mark Approval offline. The Approval column is
+ * the only field we write back; anything other than Approved / Rejected /
+ * blank fails the whole file and lists the spreadsheet rows to fix. */
+const AD_EXPORT_HEAD = ["Line Id", "Customer", "ISR", "Submitted", "Mark", "Status",
+  "Quantity", "Customer Description", "Part Code", "RK Description", "RK Inv",
+  "MBA", "Source", "Conf", "Reason", "Approval"];
+
+function csvQ(v) {
+  const s = String(v ?? "");
+  return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+
+function approvalLabel(r) {
+  if (r.approval === "approved") return "Approved";
+  if (r.approval === "rejected") return "Rejected";
+  return "";
+}
+
+function downloadCsv(filename, head, bodyRows) {
+  const blob = new Blob([[head.map(csvQ).join(","),
+    ...bodyRows.map(r => r.map(csvQ).join(","))].join("\r\n")],
+    { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function adminCsvRow(r) {
+  return [r.id, r.cust, r.isr, formatSubmittedPlain(r.submittedAt), r.mark, r.status,
+    r.qty, r.cdesc, r.status === "RFQ" ? "RFQ" : r.code, r.rk, r.inv ?? "", r.mba ?? "",
+    r.source, r.conf + "%", r.reason, approvalLabel(r)];
+}
+
+function exportAdmin(scope) {
+  if (!adRows.length) { toast("Nothing to export — the queue is empty."); return; }
+  let rows;
+  if (scope === "selected") {
+    rows = adRows.filter(r => adSel.has(r.id));
+    if (!rows.length) { toast("Select one or more lines to export."); return; }
+  } else {
+    rows = adVisible();
+    if (!rows.length) { toast("No lines match the current filters to export."); return; }
+  }
+  downloadCsv("admin_queue_" + new Date().toISOString().slice(0, 10) + ".csv",
+    AD_EXPORT_HEAD, rows.map(adminCsvRow));
+  toast(`Exported ${rows.length} line${rows.length === 1 ? "" : "s"} — fill Approval with `
+    + `Approved or Rejected, then Upload`);
+}
+
+$("#adExport").addEventListener("click", (e) => {
+  e.stopPropagation();
+  const menu = $("#adExportMenu");
+  const open = menu.hidden;
+  closeAdExportMenu();
+  if (open) {
+    menu.hidden = false;
+    $("#adExport").setAttribute("aria-expanded", "true");
+  }
+});
+$("#adExportMenu").addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-export]");
+  if (!btn) return;
+  closeAdExportMenu();
+  exportAdmin(btn.dataset.export);
+});
+function closeAdExportMenu() {
+  $("#adExportMenu").hidden = true;
+  $("#adExport").setAttribute("aria-expanded", "false");
+}
+$("#adUpload").addEventListener("click", () => {
+  closeAdExportMenu();
+  if (!adRows.length) { toast("Nothing to update — the queue is empty."); return; }
+  $("#adFile").click();
+});
+
+function parseApprovalCell(raw) {
+  const s = String(raw ?? "").trim().toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ");
+  if (!s || s === "pending") return { ok: true, value: null };
+  if (s === "approved" || s === "approve") return { ok: true, value: "approved" };
+  if (s === "rejected" || s === "reject" || s === "not approved")
+    return { ok: true, value: "rejected" };
+  return { ok: false, value: null };
+}
+
+function colIndex(head, names) {
+  const h = head.map(x => x.trim().toLowerCase());
+  for (const n of names) {
+    const i = h.indexOf(n.toLowerCase());
+    if (i >= 0) return i;
+  }
+  return -1;
+}
+
+function closeAdImport() { $("#adImportBackdrop").hidden = true; }
+function showAdImportErrors(filename, errors) {
+  const shown = errors.slice(0, 20);
+  $("#adImportBanner").textContent =
+    `${filename} was not applied. Fix ${errors.length} row`
+    + `${errors.length === 1 ? "" : "s"} and upload again — nothing in the queue was changed.`;
+  $("#adImportList").innerHTML = shown.map(e =>
+    `<li><span class="rownum">Row ${e.row}</span> — ${esc(e.msg)}</li>`).join("")
+    + (errors.length > shown.length
+      ? `<li>…and ${errors.length - shown.length} more.</li>` : "");
+  $("#adImportBackdrop").hidden = false;
+}
+$("#adImportOk").addEventListener("click", closeAdImport);
+$("#adImportX").addEventListener("click", closeAdImport);
+$("#adImportBackdrop").addEventListener("click", (e) => {
+  if (e.target.id === "adImportBackdrop") closeAdImport();
+});
+
+function applyAdminUpload(text, filename) {
+  const table = parseCSV(String(text || ""));
+  if (table.length < 2) {
+    showAdImportErrors(filename, [{ row: 1, msg: "File has no data rows." }]);
+    return;
+  }
+  const head = table[0];
+  const idCol = colIndex(head, ["Line Id", "Line ID", "Id"]);
+  const apCol = colIndex(head, ["Approval", "Approved", "Approved/Not Approved"]);
+  if (idCol < 0 || apCol < 0) {
+    showAdImportErrors(filename, [{
+      row: 1,
+      msg: "Missing required columns. Need “Line Id” and “Approval”.",
+    }]);
+    return;
+  }
+
+  const errors = [];
+  const seen = new Set();
+  const updates = [];
+  table.slice(1).forEach((cells, i) => {
+    const row = i + 2; // spreadsheet row (header is 1)
+    const id = (cells[idCol] || "").trim();
+    const raw = cells[apCol] || "";
+    if (!id) {
+      errors.push({ row, msg: "Line Id is blank." });
+      return;
+    }
+    if (seen.has(id)) {
+      errors.push({ row, msg: `Duplicate Line Id “${id}”.` });
+      return;
+    }
+    seen.add(id);
+    const live = adRows.find(r => r.id === id);
+    if (!live) {
+      errors.push({ row, msg: `Unknown Line Id “${id}” — not in the current queue.` });
+      return;
+    }
+    const parsed = parseApprovalCell(raw);
+    if (!parsed.ok) {
+      errors.push({
+        row,
+        msg: `Approval “${String(raw).trim()}” is not allowed. Use Approved, Rejected, Not approved, or leave blank. (${live.cust} mark ${live.mark})`,
+      });
+      return;
+    }
+    if (parsed.value) updates.push({ row: live, value: parsed.value });
+  });
+
+  if (errors.length) { showAdImportErrors(filename, errors); return; }
+  if (!updates.length) {
+    toast("Upload read fine — no Approval values to apply.");
+    return;
+  }
+  updates.forEach(({ row, value }) => {
+    row.approval = value;
+    adSel.delete(row.id);
+  });
+  closePop();
+  renderAD();
+  const n = updates.length;
+  toast(`Applied ${n} approval${n === 1 ? "" : "s"} from ${filename}`);
+}
+
+$("#adFile").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => applyAdminUpload(reader.result, file.name);
+  reader.readAsText(file);
+  e.target.value = "";
+});
+
 /* --------------------------- row interactions --------------------------- */
 function rowsFor(screen) { return screen === "pc" ? pcRows : adRows; }
 function rerender(screen) { screen === "pc" ? renderPC() : renderAD(); }
@@ -2042,7 +2339,12 @@ function onTableClick(e, screen) {
   if (clear) {
     (screen === "pc" ? pcFilter : adFilter).clear();
     $(screen === "pc" ? "#pcSearch" : "#adSearch").value = "";
-    if (screen === "ad") adSel.clear();
+    if (screen === "ad") {
+      adSel.clear();
+      $("#adCustomer").value = "";
+      $("#adIsr").value = "";
+      $("#adDate").value = "";
+    }
     rerender(screen);
     return;
   }
@@ -2208,6 +2510,7 @@ $("#popConfirm").addEventListener("click", () => {
 
 /* close on outside click / Escape */
 document.addEventListener("click", (e) => {
+  if (!$("#adExportMenu").hidden && !e.target.closest("#adExportWrap")) closeAdExportMenu();
   if (!popCtx) return;
   // composedPath() is captured at dispatch, so it still reports the popover
   // even if the handler above swapped the clicked node out of the DOM.
@@ -2216,7 +2519,9 @@ document.addEventListener("click", (e) => {
   if (!inside) closePop();
 });
 document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !$("#adExportMenu").hidden) { e.stopPropagation(); closeAdExportMenu(); }
   if (e.key === "Escape" && popCtx) { e.stopPropagation(); closePop(); }
+  if (e.key === "Escape" && !$("#adImportBackdrop").hidden) closeAdImport();
 });
 window.addEventListener("resize", closePop);
 document.querySelectorAll(".tablewrap").forEach(w =>
